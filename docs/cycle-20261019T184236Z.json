@@ -1,0 +1,7 @@
+{
+  "started_utc": "2026-10-19T18:39:02.580193+00:00",
+  "success": false,
+  "error_type": "RuntimeError",
+  "cleanup_success": true,
+  "finished_utc": "2026-10-19T18:42:36.063720+00:00"
+}

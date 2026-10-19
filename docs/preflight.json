@@ -1,0 +1,448 @@
+{
+  "time_utc": "2026-10-19T19:01:41.913105+00:00",
+  "region": "ru-9",
+  "paid_resources_created": false,
+  "quotas": {
+    "compute": {
+      "quota_set": {
+        "az_quotas": {
+          "ru-9a": {
+            "instances": {
+              "limit": 1000,
+              "in_use": 7
+            },
+            "cores": {
+              "limit": 600,
+              "in_use": 13
+            },
+            "ram": {
+              "limit": 5120000,
+              "in_use": 38912
+            },
+            "local_gb": {
+              "limit": 500,
+              "in_use": 0
+            },
+            "pci_gtx1080": {
+              "limit": 32,
+              "in_use": 0
+            },
+            "pci_a100": {
+              "limit": 32,
+              "in_use": 0
+            },
+            "pci_t4": {
+              "limit": 32,
+              "in_use": 0
+            }
+          }
+        },
+        "instances": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "cores": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "ram": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "local_gb": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "metadata_items": {
+          "limit": 16,
+          "in_use": 0
+        },
+        "injected_files": {
+          "limit": 10,
+          "in_use": 0
+        },
+        "injected_file_content_bytes": {
+          "limit": 10240,
+          "in_use": 0
+        },
+        "injected_file_path_bytes": {
+          "limit": 255,
+          "in_use": 0
+        },
+        "key_pairs": {
+          "limit": 100,
+          "in_use": 0
+        },
+        "server_groups": {
+          "limit": 100,
+          "in_use": 0
+        },
+        "server_group_members": {
+          "limit": 15,
+          "in_use": 0
+        },
+        "fixed_ips": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "floating_ips": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "security_groups": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "security_group_rules": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "pci_rtx2080ti": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_rtx3070": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_rtx3090": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_rtx4090": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_gtx1080": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "pci_h200": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_6000_ada": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_l40s": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_l4": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a10": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a16": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a2000": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a3000": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a4000": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a5000": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a6000": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a30": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a40": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a2": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_h100": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_a100": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "pci_a100_80": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_v100": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_t4": {
+          "limit": -1,
+          "in_use": 0
+        },
+        "pci_p100": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_mi250": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_rtx6000pro": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_rtx4090_48": {
+          "limit": 0,
+          "in_use": 0
+        },
+        "pci_b300_hgx": {
+          "limit": 0,
+          "in_use": 0
+        }
+      }
+    },
+    "volumes": {
+      "quota_set": {
+        "volumes": {
+          "limit": -1,
+          "in_use": 7,
+          "reserved": 0
+        },
+        "per_volume_gigabytes": {
+          "limit": 10240,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "gigabytes": {
+          "limit": -1,
+          "in_use": 160,
+          "reserved": 0
+        },
+        "backups": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "backup_gigabytes": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_per_volume": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "volumes_universal2.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "gigabytes_universal2.ru-9a": {
+          "limit": 10000,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_universal2.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_per_volume_universal2.ru-9a": {
+          "limit": 5,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "volumes_basicssd.ru-9a": {
+          "limit": -1,
+          "in_use": 7,
+          "reserved": 0
+        },
+        "gigabytes_basicssd.ru-9a": {
+          "limit": 600,
+          "in_use": 160,
+          "reserved": 0
+        },
+        "snapshots_basicssd.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_per_volume_basicssd.ru-9a": {
+          "limit": 5,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "volumes_iso.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "gigabytes_iso.ru-9a": {
+          "limit": 20,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_iso.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_per_volume_iso.ru-9a": {
+          "limit": 1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "volumes_basic.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "gigabytes_basic.ru-9a": {
+          "limit": 10000,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_basic.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_per_volume_basic.ru-9a": {
+          "limit": 5,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "volumes_fast.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "gigabytes_fast.ru-9a": {
+          "limit": 5000,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_fast.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_per_volume_fast.ru-9a": {
+          "limit": 5,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "volumes_universal.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "gigabytes_universal.ru-9a": {
+          "limit": 10000,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_universal.ru-9a": {
+          "limit": -1,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "snapshots_per_volume_universal.ru-9a": {
+          "limit": 5,
+          "in_use": 0,
+          "reserved": 0
+        },
+        "groups": {
+          "limit": 10,
+          "in_use": 0,
+          "reserved": 0
+        }
+      }
+    },
+    "network": {
+      "quota": {
+        "network": {
+          "limit": 100,
+          "used": 2,
+          "reserved": 0
+        },
+        "subnet": {
+          "limit": 100,
+          "used": 2,
+          "reserved": 0
+        },
+        "subnetpool": {
+          "limit": 0,
+          "used": 0,
+          "reserved": 0
+        },
+        "port": {
+          "limit": 1000,
+          "used": 13,
+          "reserved": 0
+        },
+        "router": {
+          "limit": 20,
+          "used": 2,
+          "reserved": 0
+        },
+        "floatingip": {
+          "limit": 12,
+          "used": 4,
+          "reserved": 0
+        },
+        "rbac_policy": {
+          "limit": 100,
+          "used": 0,
+          "reserved": 0
+        },
+        "security_group": {
+          "limit": 20,
+          "used": 3,
+          "reserved": 0
+        },
+        "security_group_rule": {
+          "limit": 200,
+          "used": 20,
+          "reserved": 0
+        },
+        "firewall_rule": {
+          "limit": 1000,
+          "used": 0,
+          "reserved": 0
+        },
+        "firewall_group": {
+          "limit": 10,
+          "used": 0,
+          "reserved": 0
+        },
+        "firewall_policy": {
+          "limit": 20,
+          "used": 0,
+          "reserved": 0
+        }
+      }
+    }
+  },
+  "errors": {}
+}

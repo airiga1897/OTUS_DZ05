@@ -1,0 +1,16 @@
+{
+  "time_utc": "2026-10-19T19:09:37.590855+00:00",
+  "own_state_empty": true,
+  "remaining_by_prefix": {
+    "servers": 0,
+    "volumes": 0,
+    "networks": 0,
+    "subnets": 0,
+    "routers": 0,
+    "ports": 0,
+    "security_groups": 0,
+    "server_groups": 0,
+    "own_floating_ips": 0
+  },
+  "foreign_resources_modified": false
+}

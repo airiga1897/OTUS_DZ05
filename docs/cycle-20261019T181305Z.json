@@ -1,0 +1,7 @@
+{
+  "started_utc": "2026-10-19T18:12:17.949556+00:00",
+  "success": false,
+  "error_type": "CalledProcessError",
+  "cleanup_success": true,
+  "finished_utc": "2026-10-19T18:13:05.849635+00:00"
+}

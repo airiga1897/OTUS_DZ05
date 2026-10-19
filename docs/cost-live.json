@@ -1,0 +1,57 @@
+{
+  "time_utc": "2026-10-18T18:13:07.749481+00:00",
+  "source": "https://api.selectel.ru/prices/vpc?currency=rub",
+  "price_values": "kopecks per hour",
+  "rows": [
+    {
+      "resource": "cloud_router",
+      "group": "ru-9",
+      "currency": "rub",
+      "value": 27.39726027,
+      "unit": "item",
+      "threshold": 0,
+      "quantity": 1
+    },
+    {
+      "resource": "network_floatingips",
+      "group": "ru-9",
+      "currency": "rub",
+      "value": 25.968384,
+      "unit": "item",
+      "threshold": 0,
+      "quantity": 1
+    },
+    {
+      "resource": "volume_gigabytes_basicssd",
+      "group": "ru-9a",
+      "currency": "rub",
+      "value": 1.382340862,
+      "unit": "GB",
+      "threshold": 0,
+      "quantity": 80
+    },
+    {
+      "resource": "compute_cores",
+      "group": "ru-9a",
+      "currency": "rub",
+      "value": 100.71072,
+      "unit": "item",
+      "threshold": 0,
+      "quantity": 7
+    },
+    {
+      "resource": "compute_ram",
+      "group": "ru-9a",
+      "currency": "rub",
+      "value": 0.03576375,
+      "unit": "MB",
+      "threshold": 0,
+      "quantity": 14336
+    }
+  ],
+  "rub_per_hour": 13.8163707323,
+  "rub_per_day": 331.59289757519997,
+  "rub_30_days": 9947.786927256,
+  "approved": true,
+  "approval_date_moscow": "2026-10-19"
+}

@@ -1,0 +1,22 @@
+Curated stdout, test cycle 12; 2026-10-19 UTC. Addresses and UUIDs anonymized.
+Full measurements: verification-20261019T190833Z.json
+
+Plan: 25 to add, 0 to change, 0 to destroy.
+Apply complete! Resources: 25 added, 0 changed, 0 destroyed.
+NODE READY app
+NODE READY db1
+NODE READY db2
+NODE READY db3
+{"clusterName": "otusDZ05", "status": "OK", "topology": {"db1": {"status": "ONLINE", "role": "PRIMARY"}, "db2": {"status": "ONLINE", "role": "SECONDARY"}, "db3": {"status": "ONLINE", "role": "SECONDARY"}}}
+Installed 4 object(s) from 1 fixture(s)
+128 static files copied to '/srv/otus/static'.
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+CRUD PASS pk=5 server_uuid=SERVER_UUID
+Ran 5 tests in 2.059s
+OK
+APPLICATION READY
+LIVE VERIFICATION PASSED
+Plan: 0 to add, 0 to change, 25 to destroy.
+Apply complete! Resources: 0 added, 0 changed, 25 destroyed.
+DZ05 cleanup: own Terraform state has no managed resources.
