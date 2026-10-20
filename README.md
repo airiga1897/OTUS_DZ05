@@ -87,6 +87,7 @@ Managed state должен быть пустым. Скрипт ввода creden
 # Получить адрес портала и открыть браузер
 $lab = Get-Content .\.local\lab.json -Raw | ConvertFrom-Json
 $portalUrl = 'http://' + $lab.app_public_ip
+$lab.region
 $portalUrl
 Start-Process $portalUrl
 ```
@@ -97,8 +98,14 @@ Start-Process $portalUrl
 # Удалить — также выполнить при ошибке deploy или verify
 .\.tools\venv\Scripts\python.exe scripts/lab.py destroy
 if ($LASTEXITCODE -ne 0) { throw 'Удаление не подтверждено; credentials и state сохранить для повторной очистки' }
+```
 
-# Только после успешного destroy удалить локальные credentials
+Финальный шаг — после успешного удаления стенда, завершения всех проверок
+и согласования результата удалить локальные credentials. До этого шага
+файл сохраняется локально и остаётся исключённым из Git:
+
+```powershell
+# Удалить credentials после завершения проверки и согласования ДЗ
 Remove-Item -LiteralPath .\.local\operator.json
 Remove-Item Env:OS_PASSWORD -ErrorAction SilentlyContinue
 ```
