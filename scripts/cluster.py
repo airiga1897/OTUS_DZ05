@@ -1,5 +1,6 @@
 """Execute with mysqlsh --py; Shell AdminAPI globals are supplied by mysqlsh."""
 import json
+import ipaddress
 
 with open('/root/dz05.json') as source:
     cfg=json.load(source)
@@ -25,9 +26,10 @@ sql=shell.get_session()
 sql.run_sql('CREATE DATABASE IF NOT EXISTS otus CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_cs')
 password=cfg['db_password']
 assert len(password)==64 and all(c in '0123456789abcdef' for c in password)
-sql.run_sql("CREATE USER IF NOT EXISTS 'otus'@'10.55.0.10' IDENTIFIED BY '"+password+"'")
-sql.run_sql("GRANT ALL PRIVILEGES ON otus.* TO 'otus'@'10.55.0.10'")
-sql.run_sql("GRANT ALL PRIVILEGES ON test_otus.* TO 'otus'@'10.55.0.10'")
+app_host=str(ipaddress.IPv4Address(cfg['ips']['app']))
+sql.run_sql("CREATE USER IF NOT EXISTS 'otus'@'"+app_host+"' IDENTIFIED BY '"+password+"'")
+sql.run_sql("GRANT ALL PRIVILEGES ON otus.* TO 'otus'@'"+app_host+"'")
+sql.run_sql("GRANT ALL PRIVILEGES ON test_otus.* TO 'otus'@'"+app_host+"'")
 print('PORTAL SCHEMA AND ACCOUNT READY')
 tree=cluster.status({'extended':1})
 summary={'clusterName':str(tree['clusterName']),'status':str(tree['defaultReplicaSet']['status']),'topology':{}}

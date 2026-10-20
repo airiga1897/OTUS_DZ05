@@ -5,8 +5,6 @@ $taskLocal = Join-Path $taskRoot '.local'
 New-Item -ItemType Directory -Force $taskLocal | Out-Null
 $taskValues = @{
     auth_url = $env:OS_AUTH_URL
-    project_id = $env:OS_PROJECT_ID
-    region = $env:OS_REGION_NAME
     domain_name = $env:OS_USER_DOMAIN_NAME
     username = $env:OS_USERNAME
     password = $env:OS_PASSWORD

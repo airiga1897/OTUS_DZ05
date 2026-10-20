@@ -9,7 +9,7 @@ files=subprocess.check_output(['git','ls-files','--cached','--others','--exclude
 values=[]
 for path,keys in [(ROOT/'.local/operator.json',['password']),
                   (ROOT/'.local/app-secrets.json',['cluster_password','db_password','django_secret_key']),
-                  (ROOT/'terraform-selectel/terraform.tfvars.json',['route_probe_key'])]:
+                  (ROOT/'.local/route-secret.json',['route_probe_key'])]:
     if path.exists():
         data=json.loads(path.read_text(encoding='utf-8-sig'))
         values.extend(str(data[k]).encode() for k in keys if data.get(k))

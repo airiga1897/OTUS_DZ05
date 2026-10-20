@@ -1,10 +1,5 @@
 locals {
-  nodes = {
-    app = { host = 10, role = "app" }
-    db1 = { host = 21, role = "db" }
-    db2 = { host = 22, role = "db" }
-    db3 = { host = 23, role = "db" }
-  }
+  nodes     = var.nodes
   addresses = { for name, n in local.nodes : name => cidrhost(var.subnet_cidr, n.host) }
 }
 data "openstack_networking_network_v2" "external" {
@@ -17,7 +12,7 @@ resource "openstack_networking_subnet_v2" "lab" {
   network_id      = openstack_networking_network_v2.lab.id
   cidr            = var.subnet_cidr
   ip_version      = 4
-  dns_nameservers = ["77.88.8.8", "1.1.1.1"]
+  dns_nameservers = var.dns_nameservers
 }
 resource "openstack_networking_router_v2" "lab" {
   name                = var.name_prefix

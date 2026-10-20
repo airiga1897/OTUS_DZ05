@@ -1,75 +1,85 @@
-"""Read-only Selectel quota discovery. Never creates cloud resources."""
-import argparse
+"""Read-only catalog/quota discovery; detailed results stay in .local."""
 import datetime
 import json
-import sys
-from pathlib import Path
-import urllib.error
 import time
-import yaml
+import urllib.error
+from selectel_api import authenticate, request_json
+from placement import endpoints_for, CandidateUnavailable
+from settings import LOCAL, cloud_config, load_deployment, write_json
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'scripts'))
-from selectel_api import authenticate, config_from_env, request_json
 
 def retry_read(operation):
     for attempt in range(3):
-        try:return operation()
+        try:
+            return operation()
         except urllib.error.HTTPError as error:
-            if error.code not in (408,429,500,502,503,504) or attempt==2:raise
-        except (urllib.error.URLError,TimeoutError,ConnectionError):
-            if attempt==2:raise
-        print('Temporary read-only API error; retry '+str(attempt+2),flush=True)
-        time.sleep(2**attempt)
+            if error.code not in (408, 429, 500, 502, 503, 504) or attempt == 2:
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt == 2:
+                raise
+        time.sleep(2 ** attempt)
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--auth-yaml', type=Path,
-                        help='Existing local credentials: read only; never copied or printed')
-    parser.add_argument('--auth-json', type=Path, help='Local operator config; excluded from Git')
-    args = parser.parse_args()
-    config = json.loads(args.auth_json.read_text(encoding='utf-8-sig')) if args.auth_json else (yaml.safe_load(args.auth_yaml.read_text(encoding='utf-8'))['selectel_fence_auth']
-              if args.auth_yaml else config_from_env())
-    if config['project_id'] != 'fdce7ecd9cf742a6a4eda91e927a09fb' or config['region'] != 'ru-9':
-        raise ValueError('Unexpected Selectel project/region')
-    token, catalog = retry_read(lambda:authenticate(config))
-    endpoints = {}
-    for service in catalog:
-        for e in service['endpoints']:
-            if e.get('interface') == 'public' and e.get('region') == config['region'] and e['url'].startswith('https://'):
-                endpoints[service['type']] = e['url'].rstrip('/')
-    project = config['project_id']
+
+def collect(context):
+    config = cloud_config(context)
+    token, catalog = retry_read(lambda: authenticate(config))
+    endpoints = endpoints_for(catalog, context['region'])
+    project = context['project_id']
     queries = {
         'compute': ('compute', '/os-quota-sets/' + project + '/detail'),
         'volumes': ('volumev3', '/os-quota-sets/' + project + '?usage=True'),
         'network': ('network', '/v2.0/quotas/' + project + '/details.json'),
         'servers': ('compute', '/servers/detail'),
-        'flavors': ('compute', '/flavors/detail'),
         'subnets': ('network', '/v2.0/subnets'),
+        'networks': ('network', '/v2.0/networks'),
     }
     raw = {}
-    report = {'time_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              'region': config['region'], 'paid_resources_created': False, 'quotas': {}, 'errors': {}}
-    for name, (kind, suffix) in queries.items():
+    for name, (service, path) in queries.items():
         try:
-            raw[name], _ = retry_read(lambda:request_json(endpoints[kind] + suffix, token=token))
-            if name in ('compute', 'volumes', 'network'):
-                report['quotas'][name] = json.loads(json.dumps(raw[name]))
-                report['quotas'][name].get('quota_set', {}).pop('id', None)
-            print(name + ': OK')
-        except urllib.error.HTTPError as e:
-            report['errors'][name] = 'HTTP ' + str(e.code)
-            print(name + ': HTTP ' + str(e.code))
-    local = ROOT / '.local'
-    local.mkdir(exist_ok=True)
-    (local / 'discovery.json').write_text(json.dumps(raw, indent=2), encoding='utf-8')
-    (ROOT / 'docs/preflight.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
-    print('Read-only discovery saved; credentials and token not saved.')
+            raw[name] = retry_read(lambda: request_json(endpoints[service] + path, token=token))[0]
+        except urllib.error.HTTPError as error:
+            if error.code in (403, 404):
+                raise CandidateUnavailable('Preflight API access incomplete for ' + name) from None
+            raise
+    write_json(LOCAL / 'discovery.json', raw)
+    return raw
+
+
+def sufficient(context, raw):
+    config = context['config']
+    extra = config['additional_reservation']
+    def capacity(item, need, used='in_use'):
+        return item['limit'] < 0 or item['limit'] - item.get(used, 0) - item.get('reserved', 0) >= need
+    totals = {'cores': 0, 'ram': 0, 'instances': len(config['nodes'])}
+    for node in config['nodes'].values():
+        profile = config['profiles'][node['role']]
+        totals['cores'] += profile['vcpus']
+        totals['ram'] += profile['ram_mb']
+    quotas = raw['compute']['quota_set']
+    az = quotas.get('az_quotas', {}).get(context['availability_zone'], quotas)
+    for key, need in totals.items():
+        if key not in az or not capacity(az[key], need + extra.get(key, 0)):
+            raise CandidateUnavailable('Insufficient compute capacity')
+    volume = raw['volumes']['quota_set']
+    key = 'gigabytes_' + context['volume_type']
+    # Check the regional total as well as the selected type when present.
+    required_disk = config['boot_disk_gb'] * totals['instances'] + extra['disk_gb']
+    for item in [volume.get('gigabytes'), volume.get(key)]:
+        if item is not None and not capacity(item, required_disk):
+            raise CandidateUnavailable('Insufficient disk capacity')
+    if key not in volume:
+        raise CandidateUnavailable('Selected disk type quota unavailable')
+    need_network = {'floatingip': 1, 'network': 1, 'subnet': 1, 'router': 1, 'port': 6, 'security_group': 1}
+    for key, need in need_network.items():
+        if not capacity(raw['network']['quota'][key], need + extra.get(key, 0), 'used'):
+            raise CandidateUnavailable('Insufficient network capacity')
+
 
 if __name__ == '__main__':
     try:
-        main()
-    except urllib.error.HTTPError as e:
-        sys.exit('Selectel authentication HTTP ' + str(e.code) + '; credentials hidden')
-    except (OSError, ValueError, KeyError):
-        sys.exit('Preflight unavailable; check local credentials/network; values hidden')
+        context = load_deployment()
+        sufficient(context, collect(context))
+        print('Preflight PASS; detailed data kept in .local only.')
+    except (OSError, ValueError, KeyError, CandidateUnavailable):
+        raise SystemExit('Preflight failed; check saved deployment, credentials and API access.') from None

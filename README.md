@@ -33,7 +33,7 @@ flowchart TB
 | app | 1 | 1 / 2 ГиБ | SSD 20 ГБ | Nginx, Django/uWSGI, Router, static и media |
 
 Стенд использует 7 vCPU, 14 ГиБ RAM, 80 ГБ SSD и один публичный IPv4
-в Selectel ru-9a. Правило anti-affinity размещает ВМ БД на разных физических
+в выбранном пуле Selectel. Правило anti-affinity размещает ВМ БД на разных физических
 хостах. Сеть 10.55.0.0/24, префикс otus-dz05, state и ключи отдельные.
 БД otus хранится на дисках узлов MySQL; media находится на app и резервируется
 отдельно от базы. Код приложения размещён в /opt/otus-dz05.
@@ -65,10 +65,13 @@ Group Replication, MySQL Shell AdminAPI для настройки кластер
 Все команды выполняются по очереди локально в PowerShell из корня репозитория.
 
 Подготовленный каталог содержит `.tools/venv/Scripts/python.exe`,
-`.tools/terraform.exe`, `.local/otus_dz05`, `.local/otus_dz05.pub`,
-`terraform-selectel/terraform.tfvars.json` и инициализированный Terraform.
+`.tools/terraform.exe`, `.local/lab-config.json`, собственную SSH-пару
+и инициализированный Terraform.
 Managed state должен быть пустым. Скрипт ввода credentials запрашивает
-недостающие данные оператора и пароль; регион по умолчанию ru-9.
+недостающие данные оператора и пароль. Настройки задаются только в
+`.local/lab-config.json`: сначала рассматривается указанный пул, затем кандидаты
+из списка или auto. При нехватке хостов предыдущая попытка полностью удаляется
+до перехода к следующему пулу. [Конфигурация и сохранённое размещение](docs/configuration.md).
 
 ```powershell
 # Ввести credentials
@@ -119,8 +122,9 @@ admin и media через HTTP внутри SSH-туннеля. [Порядок 
 После каждого возврата все три узла стали ONLINE; подтверждённые записи
 сохранились, контрольные суммы статей на репликах совпали.
 
+Полный цикл с SSH/22 прошёл в автоматически выбранном ru-3b.
 Результаты приведены в [отчёте](docs/results.md) и
-[обезличенном JSON](docs/verification-20261019T190833Z.json).
+[обезличенном JSON](docs/verification-20261020T080521Z.json).
 Удаление подтверждено пустым state и [API-аудитом](docs/cleanup-latest.json).
 
 ## Ограничения
@@ -146,6 +150,7 @@ seed_lessons, экспортированы dumpdata и импортирован�
 | [scripts/](scripts/) | Подготовка, настройка, проверка и удаление |
 | [config/](config/) | Шаблон подписанной пробы сетевого маршрута |
 | [docs/operations.md](docs/operations.md) | Подготовка и полная инструкция запуска |
+| [docs/configuration.md](docs/configuration.md) | Единый файл настроек и выбор пула |
 | [docs/migration.md](docs/migration.md) | Экспорт, импорт, права и media |
 | [docs/compatibility.md](docs/compatibility.md) | Совместимость приложения с MySQL |
 | [docs/resources.md](docs/resources.md) | Состав ресурсов |

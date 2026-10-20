@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import ipaddress
 
 cfg=json.loads(Path('/root/dz05.json').read_text())
 node=sys.argv[1]
@@ -38,7 +39,8 @@ max_connections=100
     if changed:cmd(['systemctl','restart','mysql'])
     password=cfg['cluster_password']
     assert all(c in '0123456789abcdef' for c in password)
-    sql=f"CREATE USER IF NOT EXISTS 'icadmin'@'10.55.0.%' IDENTIFIED BY '{password}'; GRANT ALL PRIVILEGES ON *.* TO 'icadmin'@'10.55.0.%' WITH GRANT OPTION;"
+    network=ipaddress.IPv4Network(cfg['subnet_cidr'],strict=True).with_netmask
+    sql=f"CREATE USER IF NOT EXISTS 'icadmin'@'{network}' IDENTIFIED BY '{password}'; GRANT ALL PRIVILEGES ON *.* TO 'icadmin'@'{network}' WITH GRANT OPTION;"
     cmd(['mysql'],input=sql,text=True,stdout=subprocess.DEVNULL)
     cmd(['mysql','-NBe','SELECT VERSION(),@@server_id,@@gtid_mode,@@bind_address'])
     assert subprocess.check_output(['mysql','-NBe','SELECT @@bind_address'],text=True).strip()=='0.0.0.0'

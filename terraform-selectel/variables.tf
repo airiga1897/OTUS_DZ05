@@ -12,20 +12,20 @@ variable "image_id" { type = string }
 variable "volume_type" { type = string }
 variable "flavor_ids" { type = object({ app = string, db = string }) }
 variable "external_network_name" {
-  type    = string
-  default = "external-network"
+  type = string
+
 }
 variable "name_prefix" {
-  type    = string
-  default = "otus-dz05"
+  type = string
+
   validation {
     condition     = startswith(var.name_prefix, "otus-dz05")
     error_message = "Resources must use the DZ05 prefix."
   }
 }
 variable "subnet_cidr" {
-  type    = string
-  default = "10.55.0.0/24"
+  type = string
+
 }
 variable "admin_cidrs" {
   type = list(string)
@@ -35,18 +35,21 @@ variable "admin_cidrs" {
   }
 }
 variable "ssh_public_key_path" {
-  type    = string
-  default = "../.local/otus_dz05.pub"
+  type = string
+
 }
 variable "boot_disk_gb" {
-  type    = number
-  default = 20
+  type = number
+
 }
 variable "admin_ssh_port" {
-  type    = number
-  default = 22
+  type = number
+
   validation {
     condition     = contains([22, 443], var.admin_ssh_port)
     error_message = "External SSH must use 22 or 443."
   }
 }
+
+variable "nodes" { type = map(object({ host = number, role = string })) }
+variable "dns_nameservers" { type = list(string) }

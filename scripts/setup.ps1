@@ -3,6 +3,10 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 New-Item -ItemType Directory -Force (Join-Path $taskRoot '.tools') | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $taskRoot '.local/tmp') | Out-Null
+$taskConfigPath = Join-Path $taskRoot '.local/lab-config.json'
+if (-not (Test-Path -LiteralPath $taskConfigPath)) {
+    Copy-Item -LiteralPath (Join-Path $taskRoot 'config/lab.example.json') -Destination $taskConfigPath
+}
 $taskPreviousTemp = $env:TEMP
 $taskPreviousTmp = $env:TMP
 $taskPreviousPipCache = $env:PIP_CACHE_DIR

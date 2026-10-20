@@ -48,7 +48,8 @@ SELECT COUNT(*),SHA2(GROUP_CONCAT(CONCAT_WS(':',id,slug,title,lesson,summary,bod
     finally:close(client)
 
 def verify(lab):
-    report={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'success':False,'failures':[]}
+    report={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'success':False,'failures':[],
+            'region':lab['region'],'admin_ssh_port':lab['admin_ssh_port']}
     client=connect(lab)
     try:
         report['migration']=json.loads(run(client,'sudo /opt/otus-dz05/venv/bin/python /home/otus/dz05/evidence.py prepare',quiet=True))
@@ -65,7 +66,7 @@ def verify(lab):
             node=next(n for n,ip in lab['private_ips'].items() if ip==host)
             uid=lab['server_ids'][node]
             server=api.request('/servers/'+uid)['server']
-            if server['name']!='otus-dz05-'+node:raise ValueError('Foreign VM: stop refused')
+            if server['name']!=lab['name_prefix']+'-'+node:raise ValueError('Foreign VM: stop refused')
             scenario={'stopped_role':role,'node':node,'probes':[]}
             started=time.monotonic()
             stop_monitor=threading.Event()

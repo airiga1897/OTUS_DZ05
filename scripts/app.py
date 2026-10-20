@@ -35,7 +35,7 @@ cmd(['systemctl','daemon-reload'])
 cmd(['systemctl','enable','--now','otus-router'])
 env={'DJANGO_SECRET_KEY':cfg['django_secret_key'],'DB_PASSWORD':cfg['db_password'],
      'DB_HOST':'127.0.0.1','DB_PORT':'6446','DJANGO_ALLOWED_HOSTS':cfg['public_ip']+',localhost,127.0.0.1',
-     'NODE_NAME':'otus-dz05-app','SHARED_ROOT':'/srv/otus','REQUIRE_SHARED_MOUNT':'0'}
+     'NODE_NAME':cfg['name_prefix']+'-app','SHARED_ROOT':'/srv/otus','REQUIRE_SHARED_MOUNT':'0'}
 p=root/'app.env'
 p.write_text(''.join(k+'='+v+'\n' for k,v in env.items()))
 p.chmod(0o600)
@@ -87,6 +87,6 @@ cmd(['systemctl','enable','otus-uwsgi'])
 cmd(['systemctl','restart','otus-uwsgi','nginx'])
 cmd(manage+['verify_database'],env=env)
 cmd(manage+['test','knowledge','--noinput','--verbosity','1'],env=env)
-cmd(['mysqlsh','--py','--execute',"import json; c=json.load(open('/root/dz05.json')); shell.connect({'scheme':'mysql','host':c['ips']['db1'],'user':'icadmin','password':c['cluster_password']}); session.run_sql(\"REVOKE ALL PRIVILEGES ON test_otus.* FROM 'otus'@'10.55.0.10'\")"])
+cmd(['mysqlsh','--py','--execute',"import json,ipaddress; c=json.load(open('/root/dz05.json')); shell.connect({'scheme':'mysql','host':c['ips']['db1'],'user':'icadmin','password':c['cluster_password']}); session.run_sql(\"REVOKE ALL PRIVILEGES ON test_otus.* FROM 'otus'@'\"+str(ipaddress.IPv4Address(c['ips']['app']))+\"'\")"])
 cmd(['mysqlrouter','--version'])
 print('APPLICATION READY')

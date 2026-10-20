@@ -10,12 +10,13 @@ import time
 import tarfile
 import paramiko
 from selectel_api import NovaClient
+from settings import cloud_config, load_deployment
 
 ROOT=Path(__file__).resolve().parents[1]
 LOCAL=ROOT/'.local'
 
 def auth():
-    return json.loads((LOCAL/'operator.json').read_text(encoding='utf-8-sig'))
+    return cloud_config(load_deployment())
 
 def trusted_keys(lab):
     api=NovaClient(auth())
@@ -48,7 +49,7 @@ def connect(lab,node='app'):
     try:
         client.connect(lab['app_public_ip'] if node=='app' else lab['private_ips'][node],
                        port=lab.get('admin_ssh_port',22) if node=='app' else 22,
-                       username='otus',key_filename=str(LOCAL/'otus_dz05'),sock=sock,
+                       username='otus',key_filename=lab['ssh_key_path'],sock=sock,
                        look_for_keys=False,allow_agent=False,timeout=8,banner_timeout=20)
         client._dz05_jump=jump
         return client
@@ -110,7 +111,8 @@ def configure(lab):
         secretpath.write_text(json.dumps({'cluster_password':secrets.token_hex(32),
                                         'db_password':secrets.token_hex(32),
                                         'django_secret_key':secrets.token_hex(48)}),encoding='utf-8')
-    config=dict(json.loads(secretpath.read_text()),ips=lab['private_ips'],public_ip=lab['app_public_ip'])
+    config=dict(json.loads(secretpath.read_text()),ips=lab['private_ips'],public_ip=lab['app_public_ip'],
+                subnet_cidr=lab['subnet_cidr'],name_prefix=lab['name_prefix'])
     def node_setup(node):
         client=connect(lab,node)
         try:
