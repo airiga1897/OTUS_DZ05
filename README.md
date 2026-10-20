@@ -146,7 +146,7 @@ seed_lessons, экспортированы dumpdata и импортирован�
 | [docs/operations.md](docs/operations.md) | Подготовка и полная инструкция запуска |
 | [docs/migration.md](docs/migration.md) | Экспорт, импорт, права и media |
 | [docs/compatibility.md](docs/compatibility.md) | Совместимость приложения с MySQL |
-| [docs/resources.md](docs/resources.md) | Состав ресурсов и квоты |
+| [docs/resources.md](docs/resources.md) | Состав ресурсов |
 | [docs/results.md](docs/results.md) | Подтверждённые результаты |
 
 Локальные .tools/ и .local/ исключены из Git. Credentials, ключи, реальные

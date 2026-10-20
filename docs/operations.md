@@ -12,7 +12,7 @@ Python-скрипты через SSH. Доступ к исходным ката�
 Terraform 1.16.3, Windows PowerShell. На ВМ используется Ubuntu 24.04.
 
 В панели Selectel подготовить проект и сервисного пользователя оператора.
-Пользователь должен иметь доступ к этому проекту и права чтения квот/каталогов
+Пользователь должен иметь доступ к этому проекту и права чтения данных и каталогов API
 Nova, Neutron, Cinder, создания/удаления ВМ, дисков, сетей, роутера, floating IP,
 security groups, server groups, чтения консоли ВМ и остановки/запуска ВМ.
 Ограниченный пользователь для fencing для этого не подходит. Назначение прав
@@ -70,11 +70,6 @@ $projectId = Read-Host 'UUID проекта Selectel'
 $operatorName = Read-Host 'Имя сервисного пользователя оператора'
 . .\scripts\selectel-env.ps1 -AccountNumber $accountNumber -ProjectId $projectId -UserName $operatorName
 .\scripts\save-operator.ps1
-.\.tools\venv\Scripts\python.exe scripts/preflight.py --auth-json .local/operator.json
-if ($LASTEXITCODE -ne 0) { throw 'Ошибка доступа к API' }
-$preflight = Get-Content .\docs\preflight.json -Raw | ConvertFrom-Json
-if (@($preflight.errors.PSObject.Properties).Count -ne 0) { throw 'Проверены не все квоты; создание не выполнять' }
-$preflight.quotas | ConvertTo-Json -Depth 20
 ```
 
 Регион вводить не требуется: используется значение из существующего tfvars,
@@ -86,16 +81,8 @@ prepare/preflight/tf: одного аргумента недостаточно.
 Пароль вводится скрыто при selectel-env.ps1. save-operator.ps1 сохраняет его
 в `.local/operator.json` с ограничением доступа текущему Windows-пользователю;
 каталог исключён из Git. Не выводить файл в терминал и не публиковать.
-Ожидаются `compute/volumes/network/servers/flavors/subnets: OK`, пустой errors.
-HTTP 403 от Cinder означает недостаточные права; такой результат не подтверждает
-дисковые квоты. Исправить права оператора и повторить шаг.
-
-Состав ДЗ05: 4 ВМ, 7 vCPU, 14 ГиБ RAM, 80 ГБ SSD, один floating IP,
-сеть/подсеть/роутер и anti-affinity для БД. [Состав ресурсов и квоты](resources.md).
-deploy повторно проверяет
-свободные квоты, консервативно резервируя ДЗ05 + ДЗ06: 8 ВМ, 15 vCPU,
-28 ГиБ RAM, 160 ГБ SSD и два floating IP, даже если ДЗ06 уже работает.
-Другое текущее потребление проекта также учитывается через API.
+Состав стенда приведён в [описании ресурсов](resources.md).
+При HTTP 403 проверить права оператора на соответствующий API Selectel.
 
 ```powershell
 .\.tools\venv\Scripts\python.exe scripts/prepare.py
