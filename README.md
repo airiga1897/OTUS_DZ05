@@ -27,21 +27,40 @@ Selectel ru-9a: три ВМ БД по 2 vCPU/4 ГиБ и приложение 1 
 
 ## Воспроизведение
 
-Сначала выполнить [подготовку нового клона](docs/operations.md): собственные
-Python/Terraform, скрытый ввод credentials, генерация ключей и tfvars, init.
-Из корня репозитория команды выполняются раздельно:
+Для нового клона сначала выполнить [подготовку окружения](docs/operations.md).
+Для уже подготовленного каталога ДЗ05 использовать короткую последовательность
+ниже. Команды выполнять по очереди в PowerShell из корня репозитория:
 
 ```powershell
-# Развёртывание; оставить стенд для проверки
+# Ввести credentials
+. .\scripts\selectel-env.ps1
+.\scripts\save-operator.ps1
+
+# Развернуть
 .\.tools\venv\Scripts\python.exe scripts/lab.py deploy
 
-# Проверки приложения, отказов двух ролей по очереди и возврата узлов
+# Проверить приложение, отказы и восстановление
 .\.tools\venv\Scripts\python.exe scripts/lab.py verify
 
-# Удаление только собственного стенда и проверка отсутствия остатков
-.\.tools\venv\Scripts\python.exe scripts/lab.py destroy
+# Получить адрес портала и открыть браузер
+$lab = Get-Content .\.local\lab.json -Raw | ConvertFrom-Json
+$portalUrl = 'http://' + $lab.app_public_ip
+$portalUrl
+Start-Process $portalUrl
 ```
 
+После проверки портала в браузере:
+
+```powershell
+# Удалить — также выполнить при ошибке deploy или verify
+.\.tools\venv\Scripts\python.exe scripts/lab.py destroy
+
+# Только после успешного destroy удалить локальные credentials
+Remove-Item -LiteralPath .\.local\operator.json
+Remove-Item Env:OS_PASSWORD -ErrorAction SilentlyContinue
+```
+
+Если destroy завершился ошибкой, сохранить credentials и state до успешной очистки.
 deploy требует пустой managed state; для созданного стенда использовать verify.
 Настройку выполняют Python-скрипты; задание допускает их вместо Ansible.
 
