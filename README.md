@@ -31,6 +31,13 @@ Selectel ru-9a: три ВМ БД по 2 vCPU/4 ГиБ и приложение 1 
 Для уже подготовленного каталога ДЗ05 использовать короткую последовательность
 ниже. Команды выполнять по очереди в PowerShell из корня репозитория:
 
+Подготовленный каталог содержит `.tools/venv/Scripts/python.exe`,
+`.tools/terraform.exe`, `.local/otus_dz05` и `.local/otus_dz05.pub`,
+`terraform-selectel/terraform.tfvars.json` и инициализированный Terraform.
+Managed state должен быть пустым. Ввод credentials запрашивает недостающие
+данные оператора; регион определяется автоматически. Реконструкция фикстуры,
+проверка квот, установка ПО, миграции и импорт выполняются внутри deploy.
+
 ```powershell
 # Ввести credentials
 . .\scripts\selectel-env.ps1
@@ -54,6 +61,7 @@ Start-Process $portalUrl
 ```powershell
 # Удалить — также выполнить при ошибке deploy или verify
 .\.tools\venv\Scripts\python.exe scripts/lab.py destroy
+if ($LASTEXITCODE -ne 0) { throw 'Удаление не подтверждено; credentials и state сохранить для повторной очистки' }
 
 # Только после успешного destroy удалить локальные credentials
 Remove-Item -LiteralPath .\.local\operator.json
