@@ -26,7 +26,7 @@ security groups, server groups, чтения консоли ВМ и остано
 | AccountNumber | Номер аккаунта в меню панели Selectel; не email | Пользователь |
 | ProjectId | UUID проекта в разделе облачных серверов | Пользователь |
 | UserName и пароль | Созданный сервисный пользователь, его пароль | Пользователь |
-| Region | Регион `ru-9`, зона ресурсов `ru-9a` | Зафиксировано конфигурацией |
+| Region | По умолчанию `ru-9`, зона ресурсов `ru-9a` | Автоматически, необязательный `-Region` для переопределения |
 | Image/flavor IDs, SSD type | Каталоги API | Автоматически prepare.py |
 | Ключ SSH, секреты приложения, адрес ВМ | Генерируются/получаются сценариями | Автоматически |
 
@@ -68,7 +68,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Ошибка подготовки окруже
 $accountNumber = Read-Host 'Номер аккаунта Selectel'
 $projectId = Read-Host 'UUID проекта Selectel'
 $operatorName = Read-Host 'Имя сервисного пользователя оператора'
-. .\scripts\selectel-env.ps1 -AccountNumber $accountNumber -ProjectId $projectId -UserName $operatorName -Region ru-9
+. .\scripts\selectel-env.ps1 -AccountNumber $accountNumber -ProjectId $projectId -UserName $operatorName
 .\scripts\save-operator.ps1
 .\.tools\venv\Scripts\python.exe scripts/preflight.py --auth-json .local/operator.json
 if ($LASTEXITCODE -ne 0) { throw 'Ошибка доступа к API' }
@@ -76,6 +76,12 @@ $preflight = Get-Content .\docs\preflight.json -Raw | ConvertFrom-Json
 if (@($preflight.errors.PSObject.Properties).Count -ne 0) { throw 'Проверены не все квоты; создание не выполнять' }
 $preflight.quotas | ConvertTo-Json -Depth 20
 ```
+
+Регион вводить не требуется: используется значение из существующего tfvars,
+затем из локального discovery; если оба отсутствуют — `ru-9`.
+Явный `-Region` имеет приоритет, но должен соответствовать сохранённой
+конфигурации. Другой регион требует также адаптации Terraform и проверок
+prepare/preflight/tf: одного аргумента недостаточно.
 
 Пароль вводится скрыто при selectel-env.ps1. save-operator.ps1 сохраняет его
 в `.local/operator.json` с ограничением доступа текущему Windows-пользователю;

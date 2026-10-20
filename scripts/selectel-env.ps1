@@ -31,12 +31,7 @@ if (Test-Path -LiteralPath $taskJsonPath) {
 if (-not $Region) {
     if ($taskConfiguredRegion) { $Region = $taskConfiguredRegion }
     elseif ($taskDiscovery.region) { $Region = $taskDiscovery.region }
-    else {
-        Write-Host 'Регион — идентификатор пула Selectel (например ru-9), не сегмент ru-9a.'
-        Write-Host 'Доступные вашему проекту пулы показаны в панели: Облачные серверы -> выбор пула.'
-        Write-Host 'Локальный каталог ещё не сохранён; список доступных пулов не определён.'
-        $Region = Read-Host 'Регион из панели Selectel'
-    }
+    else { $Region = 'ru-9' }
 }
 if ($taskConfiguredRegion -and $Region -ne $taskConfiguredRegion) {
     throw "Регион $Region отличается от Terraform ($taskConfiguredRegion). Сначала согласуйте конфигурацию."
