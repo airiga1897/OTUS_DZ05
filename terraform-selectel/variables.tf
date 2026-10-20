@@ -44,7 +44,7 @@ variable "boot_disk_gb" {
 }
 variable "admin_ssh_port" {
   type    = number
-  default = 443
+  default = 22
   validation {
     condition     = contains([22, 443], var.admin_ssh_port)
     error_message = "External SSH must use 22 or 443."
