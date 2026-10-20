@@ -1,7 +1,0 @@
-{
-  "started_utc": "2026-10-19T18:31:41.845991+00:00",
-  "success": false,
-  "error_type": "JSONDecodeError",
-  "cleanup_success": true,
-  "finished_utc": "2026-10-19T18:34:14.361391+00:00"
-}
