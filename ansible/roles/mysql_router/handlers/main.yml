@@ -1,0 +1,7 @@
+---
+- name: Restart Router
+  ansible.builtin.systemd_service:
+    name: otus-router
+    state: restarted
+    enabled: true
+    daemon_reload: true

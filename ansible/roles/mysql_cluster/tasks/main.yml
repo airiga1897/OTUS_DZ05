@@ -1,0 +1,13 @@
+---
+- name: Install the guarded AdminAPI procedure
+  ansible.builtin.copy:
+    src: "{{ dz05_run_dir }}/scripts/cluster.py"
+    dest: /home/otus/dz05/cluster.py
+    mode: '0644'
+
+- name: Bootstrap once or add empty instances without re-cloning existing members
+  ansible.builtin.command:
+    argv: [mysqlsh, --no-wizard, --py, --file, /home/otus/dz05/cluster.py]
+  register: cluster_reconcile
+  changed_when: dz05.bootstrap or dz05.configure_nodes | length > 0
+  no_log: true

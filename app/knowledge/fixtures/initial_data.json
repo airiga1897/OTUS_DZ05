@@ -1,0 +1,72 @@
+[
+  {
+    "model": "knowledge.article",
+    "pk": 1,
+    "fields": {
+      "title": "Первая инфраструктура в Yandex Cloud",
+      "slug": "terraform-yc",
+      "lesson": 1,
+      "summary": "Terraform, сеть и безопасный SSH-доступ.",
+      "body": "ДЗ01 посвящено созданию виртуальной машины через Terraform.\nКонфигурация инфраструктуры хранится в Git, реальные параметры и state остаются локальными.\nИсходники: https://github.com/airiga1897/OTUS_DZ01",
+      "image": "",
+      "published": true,
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "knowledge.article",
+    "pk": 2,
+    "fields": {
+      "title": "Общее хранилище GFS2",
+      "slug": "shared-gfs2",
+      "lesson": 2,
+      "summary": "iSCSI, multipath и распределённые блокировки.",
+      "body": "ДЗ02 объединяет iSCSI-хранилище и несколько клиентов GFS2.\nПроверяются общий доступ и перекрёстная запись.\nИсходники: https://github.com/airiga1897/OTUS_DZ02",
+      "image": "",
+      "published": true,
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "knowledge.article",
+    "pk": 3,
+    "fields": {
+      "title": "Балансировка веб-приложения",
+      "slug": "nginx-balance",
+      "lesson": 3,
+      "summary": "Два веб-узла, общая БД и проверки переключения.",
+      "body": "ДЗ03 использует Nginx, PHP-FPM и WordPress. Проверены балансировка и отказ веб-службы.\nИсходники: https://github.com/airiga1897/OTUS_DZ03",
+      "image": "",
+      "published": true,
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "knowledge.article",
+    "pk": 4,
+    "fields": {
+      "title": "Отказоустойчивое приложение",
+      "slug": "high-load",
+      "lesson": 4,
+      "summary": "Пять ВМ, два фронта и эксперимент DRBD + GFS2.",
+      "body": "ДЗ04 объединяет инфраструктуру и веб-приложение.\nDRBD dual-primary + GFS2 — учебный эксперимент в неподдерживаемом режиме; результаты отказных испытаний публикуются только после их выполнения.\nДля промышленного применения рекомендуется отказоустойчивое общее блочное хранилище с резервируемыми iSCSI-контроллерами и несколькими путями доступа.\nИсходники: https://github.com/airiga1897/OTUS_DZ04",
+      "image": "",
+      "published": true,
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "knowledge.article",
+    "pk": 5,
+    "fields": {
+      "title": "Отказоустойчивый кластер MySQL",
+      "slug": "mysql-cluster",
+      "lesson": 5,
+      "summary": "Три узла InnoDB Cluster, MySQL Router и Django-портал.",
+      "body": "ДЗ05 посвящено отказоустойчивой базе данных веб-проекта в Selectel.\nТри узла MySQL InnoDB Cluster работают в режиме single-primary. На отдельной ВМ размещены Django, uWSGI, Nginx и MySQL Router.\nTerraform создаёт инфраструктуру, Python-скрипты настраивают кластер и приложение. Схема создаётся миграциями Django, начальные данные загружаются фикстурой.\nПроверяются чтение и запись через портал, отказ PRIMARY и SECONDARY по очереди, возврат трёх узлов ONLINE и сохранность данных. Приложение, Router и media на одной ВМ остаются единой точкой отказа.\nИсходники: https://github.com/airiga1897/OTUS_DZ05",
+      "image": "",
+      "published": true,
+      "updated_at": "2026-01-01T00:00:00Z"
+    }
+  }
+]

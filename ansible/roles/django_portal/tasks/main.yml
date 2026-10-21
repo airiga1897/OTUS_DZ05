@@ -1,0 +1,119 @@
+---
+- name: Create application directory
+  ansible.builtin.file:
+    path: /opt/otus-dz05
+    state: directory
+    mode: '0755'
+
+- name: Synchronize application source without touching media or database
+  ansible.builtin.copy:
+    src: "{{ dz05_run_dir }}/app/"
+    dest: /opt/otus-dz05/app/
+    mode: '0644'
+    directory_mode: '0755'
+  notify: Restart portal
+
+- name: Install application requirements into its own venv
+  ansible.builtin.pip:
+    requirements: /opt/otus-dz05/app/requirements.txt
+    virtualenv: /opt/otus-dz05/venv
+    virtualenv_command: /usr/bin/python3 -m venv
+  notify: Restart portal
+
+- name: Install uWSGI into the application venv
+  ansible.builtin.pip:
+    name: uwsgi==2.0.31
+    virtualenv: /opt/otus-dz05/venv
+  notify: Restart portal
+
+- name: Store root-only application environment
+  ansible.builtin.template:
+    src: app.env.j2
+    dest: /opt/otus-dz05/app.env
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+  notify: Restart portal
+
+- name: Ensure shared static and media directories
+  ansible.builtin.file:
+    path: "/srv/otus/{{ item }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  loop: [static, media]
+
+- name: Create storage readiness marker
+  ansible.builtin.copy:
+    content: otus-dz05
+    dest: /srv/otus/.ready
+    mode: '0644'
+
+- name: Create or update schema through Django migrations
+  ansible.builtin.shell: >-
+    set -a; . /opt/otus-dz05/app.env; set +a;
+    /opt/otus-dz05/venv/bin/python /opt/otus-dz05/app/manage.py migrate --noinput
+  register: migration_result
+  changed_when: "'Applying ' in migration_result.stdout"
+
+- name: Initialize data transactionally with a permanent database marker
+  ansible.builtin.shell: >-
+    set -a; . /opt/otus-dz05/app.env; set +a;
+    /opt/otus-dz05/venv/bin/python /opt/otus-dz05/app/manage.py initialize_portal
+    {{ '--allow-initial-load' if dz05.bootstrap else '' }}
+  register: data_initialization
+  changed_when: "'IMPORT_MARKER_CREATED=True' in data_initialization.stdout"
+  notify: Restart portal
+
+- name: Remove obsolete file marker only after database initialization committed
+  ansible.builtin.file:
+    path: /opt/otus-dz05/imported
+    state: absent
+  when: data_initialization is defined and data_initialization.rc == 0
+
+- name: Collect static assets
+  ansible.builtin.shell: >-
+    set -a; . /opt/otus-dz05/app.env; set +a;
+    /opt/otus-dz05/venv/bin/python /opt/otus-dz05/app/manage.py collectstatic --noinput
+  register: static_result
+  changed_when: "'0 static files copied' not in static_result.stdout"
+
+- name: Install uWSGI configuration
+  ansible.builtin.template:
+    src: uwsgi.ini.j2
+    dest: /opt/otus-dz05/uwsgi.ini
+    mode: '0644'
+  notify: Restart portal
+
+- name: Install application service
+  ansible.builtin.template:
+    src: otus-uwsgi.service.j2
+    dest: /etc/systemd/system/otus-uwsgi.service
+    mode: '0644'
+  notify: Restart portal
+
+- name: Configure Nginx
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-enabled/default
+    mode: '0644'
+  notify: Apply nginx configuration
+
+- name: Install read-only verification helper
+  ansible.builtin.copy:
+    src: "{{ dz05_run_dir }}/scripts/evidence.py"
+    dest: /home/otus/dz05/evidence.py
+    mode: '0644'
+
+- name: Apply service handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure application services are running
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  loop: [otus-uwsgi, nginx]

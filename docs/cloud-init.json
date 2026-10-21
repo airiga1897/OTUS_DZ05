@@ -1,0 +1,26 @@
+[
+  {
+    "status": "done",
+    "fatal_errors": [],
+    "warning_exit_code": 2,
+    "node": "app"
+  },
+  {
+    "status": "done",
+    "fatal_errors": [],
+    "warning_exit_code": 2,
+    "node": "db1"
+  },
+  {
+    "status": "done",
+    "fatal_errors": [],
+    "warning_exit_code": 2,
+    "node": "db2"
+  },
+  {
+    "status": "done",
+    "fatal_errors": [],
+    "warning_exit_code": 2,
+    "node": "db3"
+  }
+]

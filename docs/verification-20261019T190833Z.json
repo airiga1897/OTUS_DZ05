@@ -1,0 +1,293 @@
+{
+  "time_utc": "2026-10-19T19:06:26.639943+00:00",
+  "success": true,
+  "failures": [
+    {
+      "stopped_role": "PRIMARY",
+      "node": "db1",
+      "probes": [],
+      "seconds_to_success": 17.11,
+      "surviving_members": [
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ],
+      "crud": "CRUD PASS pk=9 server_uuid=SERVER_UUID",
+      "http": {
+        "/": 200,
+        "/articles/high-load/": 200,
+        "/health/ready": 200,
+        "/static/knowledge/site.css": 200
+      },
+      "durable_write": {
+        "persisted_pk": 6,
+        "body": "committed-after-PRIMARY"
+      },
+      "readiness_samples": [
+        {
+          "seconds": 0.4,
+          "status": 200
+        },
+        {
+          "seconds": 3.99,
+          "error_type": "HTTPError",
+          "status": 503
+        },
+        {
+          "seconds": 5.23,
+          "status": 200
+        },
+        {
+          "seconds": 6.48,
+          "status": 200
+        },
+        {
+          "seconds": 7.76,
+          "status": 200
+        },
+        {
+          "seconds": 8.86,
+          "status": 200
+        },
+        {
+          "seconds": 9.95,
+          "status": 200
+        },
+        {
+          "seconds": 11.43,
+          "status": 200
+        },
+        {
+          "seconds": 12.61,
+          "status": 200
+        },
+        {
+          "seconds": 13.85,
+          "status": 200
+        },
+        {
+          "seconds": 14.96,
+          "status": 200
+        },
+        {
+          "seconds": 16.35,
+          "status": 200
+        },
+        {
+          "seconds": 17.51,
+          "status": 200
+        }
+      ],
+      "recovered_members": [
+        [
+          "db1",
+          "ONLINE",
+          "SECONDARY"
+        ],
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ]
+    },
+    {
+      "stopped_role": "SECONDARY",
+      "node": "db1",
+      "probes": [],
+      "seconds_to_success": 16.33,
+      "surviving_members": [
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ],
+      "crud": "CRUD PASS pk=10 server_uuid=SERVER_UUID",
+      "http": {
+        "/": 200,
+        "/articles/high-load/": 200,
+        "/health/ready": 200,
+        "/static/knowledge/site.css": 200
+      },
+      "durable_write": {
+        "persisted_pk": 6,
+        "body": "committed-after-SECONDARY"
+      },
+      "readiness_samples": [
+        {
+          "seconds": 0.2,
+          "status": 200
+        },
+        {
+          "seconds": 1.47,
+          "status": 200
+        },
+        {
+          "seconds": 2.73,
+          "status": 200
+        },
+        {
+          "seconds": 4.05,
+          "status": 200
+        },
+        {
+          "seconds": 5.4,
+          "status": 200
+        },
+        {
+          "seconds": 6.75,
+          "status": 200
+        },
+        {
+          "seconds": 8.07,
+          "status": 200
+        },
+        {
+          "seconds": 9.37,
+          "status": 200
+        },
+        {
+          "seconds": 10.58,
+          "status": 200
+        },
+        {
+          "seconds": 11.85,
+          "status": 200
+        },
+        {
+          "seconds": 13.15,
+          "status": 200
+        },
+        {
+          "seconds": 14.44,
+          "status": 200
+        },
+        {
+          "seconds": 15.65,
+          "status": 200
+        },
+        {
+          "seconds": 16.87,
+          "status": 200
+        }
+      ],
+      "recovered_members": [
+        [
+          "db1",
+          "ONLINE",
+          "SECONDARY"
+        ],
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ]
+    }
+  ],
+  "migration": {
+    "source_rows": 4,
+    "source_pks": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "source_sha256": "537c66a36b1ec1bb7bca267a3cce9238b860d57ab175f4f34948b08d264e3057",
+    "new_pk": 6,
+    "auto_increment_verified": true,
+    "fixture_content_matches": true,
+    "all_article_fields_match": true,
+    "article_permissions": 4,
+    "contenttype_group_user_relations_verified": true
+  },
+  "admin_http": {
+    "transport": "HTTP over trusted SSH tunnel",
+    "login_status": 302,
+    "article_create_status": 302,
+    "article_read_status": 200,
+    "media_read_status": 200,
+    "media_sha256": "36fe6ab71ec56fa1fc84326e4673fbf028c6ad2eb5051ce5a9e6cb0d07c85f4c"
+  },
+  "http_before": {
+    "/": 200,
+    "/articles/high-load/": 200,
+    "/health/ready": 200,
+    "/static/knowledge/site.css": 200
+  },
+  "crud_before": "CRUD PASS pk=8 server_uuid=SERVER_UUID",
+  "initial_members": [
+    [
+      "db1",
+      "ONLINE",
+      "PRIMARY"
+    ],
+    [
+      "db2",
+      "ONLINE",
+      "SECONDARY"
+    ],
+    [
+      "db3",
+      "ONLINE",
+      "SECONDARY"
+    ]
+  ],
+  "http_after": {
+    "/": 200,
+    "/articles/high-load/": 200,
+    "/health/ready": 200,
+    "/static/knowledge/site.css": 200
+  },
+  "crud_after": "CRUD PASS pk=11 server_uuid=SERVER_UUID",
+  "replica_snapshots": {
+    "db1": {
+      "version": "8.0.46-0ubuntu0.24.04.4",
+      "non_innodb_tables": 0,
+      "tables_without_pk": 0,
+      "article_count": 6,
+      "article_sha256": "c54d01973857720e40071f0f014a727a511a5cc26392d4d98d16bedde39eac54"
+    },
+    "db2": {
+      "version": "8.0.46-0ubuntu0.24.04.4",
+      "non_innodb_tables": 0,
+      "tables_without_pk": 0,
+      "article_count": 6,
+      "article_sha256": "c54d01973857720e40071f0f014a727a511a5cc26392d4d98d16bedde39eac54"
+    },
+    "db3": {
+      "version": "8.0.46-0ubuntu0.24.04.4",
+      "non_innodb_tables": 0,
+      "tables_without_pk": 0,
+      "article_count": 6,
+      "article_sha256": "c54d01973857720e40071f0f014a727a511a5cc26392d4d98d16bedde39eac54"
+    }
+  },
+  "final_cleanup": {
+    "source_articles_remaining": 4,
+    "temporary_admin_removed": true
+  }
+}

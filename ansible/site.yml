@@ -1,0 +1,30 @@
+---
+- name: Prepare configured hosts
+  hosts: all
+  gather_facts: false
+  any_errors_fatal: true
+  roles:
+    - common
+
+- name: Configure MySQL members one at a time
+  hosts: database
+  gather_facts: false
+  serial: 1
+  any_errors_fatal: true
+  roles:
+    - mysql_member
+
+- name: Reconcile InnoDB membership
+  hosts: "{{ dz05.seed_node }}"
+  gather_facts: false
+  any_errors_fatal: true
+  roles:
+    - mysql_cluster
+
+- name: Configure Router and portal
+  hosts: application
+  gather_facts: false
+  any_errors_fatal: true
+  roles:
+    - mysql_router
+    - django_portal

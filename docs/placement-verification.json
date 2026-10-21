@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "configuration_source": ".local/lab-config.json",
+  "configured_first_pool": "ru-9",
+  "selected_pool": "ru-3",
+  "selected_segment": "ru-3b",
+  "admin_ssh_port": 22,
+  "fallback_cleanup_confirmed": true,
+  "verify_and_destroy_used_saved_pool": true,
+  "full_verification_report": "verification-20261020T080521Z.json",
+  "cleanup_success": true,
+  "operator_credentials_published": false
+}

@@ -1,0 +1,276 @@
+{
+  "time_utc": "2026-10-20T20:10:21.396933+00:00",
+  "success": true,
+  "failures": [
+    {
+      "stopped_role": "PRIMARY",
+      "node": "db1",
+      "probes": [],
+      "seconds_to_success": 12.34,
+      "surviving_members": [
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ],
+      "crud": "CRUD PASS pk=10 server_uuid=SERVER_UUID",
+      "http": {
+        "/": 200,
+        "/articles/high-load/": 200,
+        "/health/ready": 200,
+        "/static/knowledge/site.css": 200
+      },
+      "durable_write": {
+        "persisted_pk": 7,
+        "body": "committed-after-PRIMARY"
+      },
+      "readiness_samples": [
+        {
+          "seconds": 0.11,
+          "status": 200
+        },
+        {
+          "seconds": 3.68,
+          "error_type": "HTTPError",
+          "status": 503
+        },
+        {
+          "seconds": 4.78,
+          "status": 200
+        },
+        {
+          "seconds": 5.88,
+          "status": 200
+        },
+        {
+          "seconds": 6.98,
+          "status": 200
+        },
+        {
+          "seconds": 8.06,
+          "status": 200
+        },
+        {
+          "seconds": 9.14,
+          "status": 200
+        },
+        {
+          "seconds": 10.24,
+          "status": 200
+        },
+        {
+          "seconds": 11.37,
+          "status": 200
+        },
+        {
+          "seconds": 12.48,
+          "status": 200
+        }
+      ],
+      "recovered_members": [
+        [
+          "db1",
+          "ONLINE",
+          "SECONDARY"
+        ],
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ]
+    },
+    {
+      "stopped_role": "SECONDARY",
+      "node": "db1",
+      "probes": [],
+      "seconds_to_success": 12.86,
+      "surviving_members": [
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ],
+      "crud": "CRUD PASS pk=11 server_uuid=SERVER_UUID",
+      "http": {
+        "/": 200,
+        "/articles/high-load/": 200,
+        "/health/ready": 200,
+        "/static/knowledge/site.css": 200
+      },
+      "durable_write": {
+        "persisted_pk": 7,
+        "body": "committed-after-SECONDARY"
+      },
+      "readiness_samples": [
+        {
+          "seconds": 0.15,
+          "status": 200
+        },
+        {
+          "seconds": 1.24,
+          "status": 200
+        },
+        {
+          "seconds": 2.36,
+          "status": 200
+        },
+        {
+          "seconds": 3.45,
+          "status": 200
+        },
+        {
+          "seconds": 4.52,
+          "status": 200
+        },
+        {
+          "seconds": 5.71,
+          "status": 200
+        },
+        {
+          "seconds": 6.81,
+          "status": 200
+        },
+        {
+          "seconds": 7.9,
+          "status": 200
+        },
+        {
+          "seconds": 8.97,
+          "status": 200
+        },
+        {
+          "seconds": 10.06,
+          "status": 200
+        },
+        {
+          "seconds": 11.2,
+          "status": 200
+        },
+        {
+          "seconds": 12.32,
+          "status": 200
+        }
+      ],
+      "recovered_members": [
+        [
+          "db1",
+          "ONLINE",
+          "SECONDARY"
+        ],
+        [
+          "db2",
+          "ONLINE",
+          "PRIMARY"
+        ],
+        [
+          "db3",
+          "ONLINE",
+          "SECONDARY"
+        ]
+      ]
+    }
+  ],
+  "region": "ru-9",
+  "admin_ssh_port": 22,
+  "migration": {
+    "source_rows": 5,
+    "source_pks": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "source_sha256": "eb2182c557da101cc84f5dfbc82035c130100522dcd47c5b17b03f8c4bfb8f3f",
+    "new_pk": 7,
+    "auto_increment_verified": true,
+    "fixture_content_matches": true,
+    "all_article_fields_match": true,
+    "article_permissions": 4,
+    "contenttype_group_user_relations_verified": true
+  },
+  "admin_http": {
+    "transport": "HTTP over trusted SSH tunnel",
+    "login_status": 302,
+    "article_create_status": 302,
+    "article_read_status": 200,
+    "media_read_status": 200,
+    "media_sha256": "36fe6ab71ec56fa1fc84326e4673fbf028c6ad2eb5051ce5a9e6cb0d07c85f4c"
+  },
+  "http_before": {
+    "/": 200,
+    "/articles/high-load/": 200,
+    "/health/ready": 200,
+    "/static/knowledge/site.css": 200
+  },
+  "crud_before": "CRUD PASS pk=9 server_uuid=SERVER_UUID",
+  "initial_members": [
+    [
+      "db1",
+      "ONLINE",
+      "PRIMARY"
+    ],
+    [
+      "db2",
+      "ONLINE",
+      "SECONDARY"
+    ],
+    [
+      "db3",
+      "ONLINE",
+      "SECONDARY"
+    ]
+  ],
+  "http_after": {
+    "/": 200,
+    "/articles/high-load/": 200,
+    "/health/ready": 200,
+    "/static/knowledge/site.css": 200
+  },
+  "crud_after": "CRUD PASS pk=12 server_uuid=SERVER_UUID",
+  "replica_snapshots": {
+    "db1": {
+      "version": "8.0.46-0ubuntu0.24.04.4",
+      "non_innodb_tables": 0,
+      "tables_without_pk": 0,
+      "article_count": 7,
+      "article_sha256": "63eded007f88471aeccf27faa6ef1f30c78682c76ab39c149f036796c57f27e7"
+    },
+    "db2": {
+      "version": "8.0.46-0ubuntu0.24.04.4",
+      "non_innodb_tables": 0,
+      "tables_without_pk": 0,
+      "article_count": 7,
+      "article_sha256": "63eded007f88471aeccf27faa6ef1f30c78682c76ab39c149f036796c57f27e7"
+    },
+    "db3": {
+      "version": "8.0.46-0ubuntu0.24.04.4",
+      "non_innodb_tables": 0,
+      "tables_without_pk": 0,
+      "article_count": 7,
+      "article_sha256": "63eded007f88471aeccf27faa6ef1f30c78682c76ab39c149f036796c57f27e7"
+    }
+  },
+  "final_cleanup": {
+    "source_articles_remaining": 5,
+    "temporary_admin_removed": true
+  }
+}

@@ -1,0 +1,12 @@
+[Unit]
+After=network-online.target otus-router.service
+Wants=otus-router.service
+[Service]
+User=www-data
+Group=www-data
+EnvironmentFile=/opt/otus-dz05/app.env
+ExecStart=/opt/otus-dz05/venv/bin/uwsgi --ini /opt/otus-dz05/uwsgi.ini
+Restart=on-failure
+RestartSec=2
+[Install]
+WantedBy=multi-user.target

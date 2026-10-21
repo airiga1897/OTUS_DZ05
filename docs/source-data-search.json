@@ -1,0 +1,15 @@
+{
+  "time_utc": "2026-10-19T19:06:56.486610+00:00",
+  "source_project": "OTUS_DZ04",
+  "ignored_local_folders_included": true,
+  "excluded": [
+    ".git",
+    ".tools",
+    ".terraform",
+    ".venv",
+    "__pycache__"
+  ],
+  "database_archive_candidates": [],
+  "django_fixture_candidates": [],
+  "fallback": "Reconstructed four Article rows from seed_lessons; not historical PostgreSQL data"
+}

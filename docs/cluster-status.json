@@ -1,0 +1,18 @@
+{
+  "clusterName": "otusDZ05",
+  "status": "OK",
+  "topology": {
+    "db1": {
+      "status": "ONLINE",
+      "role": "PRIMARY"
+    },
+    "db2": {
+      "status": "ONLINE",
+      "role": "SECONDARY"
+    },
+    "db3": {
+      "status": "ONLINE",
+      "role": "SECONDARY"
+    }
+  }
+}

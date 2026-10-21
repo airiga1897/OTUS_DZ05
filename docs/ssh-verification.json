@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "external_port": 22,
+  "scope": "Application VM SSH only",
+  "cleanup_success": true,
+  "signed_operator_route_verified": true,
+  "authenticated": true,
+  "operator_source_matches_allowed_32": true,
+  "trusted_host_key": true,
+  "remote_command_succeeded": true,
+  "sshd_effective_port": 22
+}
