@@ -18,13 +18,21 @@ python -m venv (Join-Path $taskRoot '.tools/venv')
 if ($LASTEXITCODE) { throw 'Python venv creation failed.' }
 & (Join-Path $taskRoot '.tools/venv/Scripts/python.exe') -m pip install -r (Join-Path $taskRoot 'requirements-local.txt')
 if ($LASTEXITCODE) { throw 'Local dependency installation failed.' }
+& (Join-Path $taskRoot '.tools/venv/Scripts/python.exe') (Join-Path $taskRoot 'scripts/check_ansible.py')
+if ($LASTEXITCODE) { throw 'Ansible source validation failed.' }
+$taskTarget = Join-Path $taskRoot '.tools/terraform.exe'
 if ($TerraformPath) {
-    Copy-Item -LiteralPath $TerraformPath -Destination (Join-Path $taskRoot '.tools/terraform.exe')
-} else {
-    $taskTerraform = (Get-Command terraform -ErrorAction Stop).Source
-    Copy-Item -LiteralPath $taskTerraform -Destination (Join-Path $taskRoot '.tools/terraform.exe')
+    $taskSource = (Resolve-Path -LiteralPath $TerraformPath -ErrorAction Stop).Path
+    if ([IO.Path]::GetFullPath($taskSource) -ne [IO.Path]::GetFullPath($taskTarget)) {
+        Copy-Item -LiteralPath $taskSource -Destination $taskTarget
+    }
+} elseif (-not (Test-Path -LiteralPath $taskTarget)) {
+    Copy-Item -LiteralPath (Get-Command terraform -ErrorAction Stop).Source -Destination $taskTarget
 }
+& $taskTarget version
+if ($LASTEXITCODE) { throw 'Local Terraform executable check failed.' }
 Write-Host 'Local Python and Terraform tools prepared; no cloud resources created.'
+Write-Host 'Ansible control environment is prepared automatically on the Ubuntu app VM during deploy.'
 } finally {
     $env:TEMP = $taskPreviousTemp
     $env:TMP = $taskPreviousTmp

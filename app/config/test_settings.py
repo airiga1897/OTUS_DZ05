@@ -1,4 +1,6 @@
+"""Offline Django checks only; deployment always uses the MySQL settings."""
 from .settings import *  # noqa: F403
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
+
+DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}}
 REQUIRE_SHARED_MOUNT = False
-PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']

@@ -1,0 +1,61 @@
+---
+- name: Validate SQL and environment inputs before handling secrets
+  ansible.builtin.assert:
+    that:
+      - dz05.cluster_password is match('^[0-9a-f]{64}$')
+      - dz05.db_password is match('^[0-9a-f]{64}$')
+      - dz05.django_secret_key is match('^[0-9a-f]{96}$')
+      - dz05.name_prefix is match('^otus-dz05(?:-[a-z0-9-]+)?$')
+  no_log: true
+
+- name: Wait until cloud-init completed
+  ansible.builtin.command: cloud-init status --wait
+  register: cloud_init_result
+  changed_when: false
+  failed_when: cloud_init_result.rc not in [0, 2]
+
+- name: Reject fatal cloud-init errors
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - "import json,sys; d=json.load(open('/run/cloud-init/result.json')); sys.exit(bool(d.get('v1',{}).get('errors',[])))"
+  changed_when: false
+
+- name: Create protected configuration directory
+  ansible.builtin.file:
+    path: /home/otus/dz05
+    state: directory
+    mode: '0755'
+
+- name: Store application and cluster secrets for root-only tools
+  ansible.builtin.copy:
+    content: "{{ dz05 | to_json }}"
+    dest: /root/dz05.json
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+
+- name: Install packages for new database nodes
+  ansible.builtin.apt:
+    name: [mysql-server, mysql-shell]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: inventory_hostname in groups['database'] and dz05_new
+
+- name: Install application packages
+  ansible.builtin.apt:
+    name: [mysql-router, mysql-shell, nginx, python3-venv, python3-dev, build-essential, pkg-config, default-libmysqlclient-dev, libpcre3-dev]
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: inventory_hostname == 'app'
+
+- name: Stop the temporary route probe after route verification
+  ansible.builtin.systemd_service:
+    name: otus-dz05-route
+    state: stopped
+    enabled: false
+  when: inventory_hostname == 'app'

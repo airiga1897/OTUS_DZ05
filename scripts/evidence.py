@@ -21,15 +21,17 @@ from knowledge.models import Article
 mode=sys.argv[1]
 if mode=='prepare':
     source=list(Article.objects.order_by('pk').values('pk','slug','title','body'))
-    assert len(source)==4 and [r['pk'] for r in source]==[1,2,3,4]
-    fixture=json.loads(Path('/home/otus/dz05/portal.json').read_text())
-    expected=[dict(pk=r['pk'],**{k:r['fields'][k] for k in ['slug','title','body']})
-              for r in fixture if r['model']=='knowledge.article']
-    assert source==sorted(expected,key=lambda r:r['pk']),'Imported data differs from reconstructed export'
+    fixture=json.loads(Path('/opt/otus-dz05/app/knowledge/fixtures/initial_data.json').read_text(encoding='utf-8'))
+    if Article.objects.filter(slug__in=['dz05-durable','dz05-media-proof']).exists() or get_user_model().objects.filter(username='dz05-check').exists() or Group.objects.filter(name='dz05-check-editors').exists():
+        raise RuntimeError('Reserved verification identities already exist; inspect unfinished verification before retrying')
     full=json.loads(serializers.serialize('json',Article.objects.order_by('pk'),use_natural_foreign_keys=True))
-    assert full==sorted([r for r in fixture if r['model']=='knowledge.article'],key=lambda r:r['pk'])
+    source_max_pk=max([r['pk'] for r in source],default=0)
+    expected=sorted([r for r in fixture if r['model']=='knowledge.article'],key=lambda r:r['pk'])
+    fixture_matches=full==expected
+    baseline={'article_count':len(source),'article_sha256':hashlib.sha256(json.dumps(full,sort_keys=True).encode()).hexdigest()}
+    Path('/root/dz05-verification-baseline.json').write_text(json.dumps(baseline))
     a=Article.objects.create(slug='dz05-durable',title='До отказа',lesson=5,summary='HA evidence',body='committed-before-failure')
-    assert a.pk>4
+    assert a.pk>source_max_pk
     u,created=get_user_model().objects.get_or_create(username='dz05-check')
     u.is_staff=u.is_active=True
     u.is_superuser=False
@@ -43,8 +45,8 @@ if mode=='prepare':
     assert all(u.has_perm('knowledge.'+p) for p in ['add_article','change_article','delete_article','view_article'])
     print(json.dumps({'source_rows':len(source),'source_pks':[r['pk'] for r in source],
                       'source_sha256':hashlib.sha256(json.dumps(source,sort_keys=True,ensure_ascii=False).encode()).hexdigest(),
-                      'new_pk':a.pk,'auto_increment_verified':a.pk>4,'fixture_content_matches':True,
-                      'all_article_fields_match':True,
+                      'new_pk':a.pk,'auto_increment_verified':a.pk>source_max_pk,'fixture_content_matches':fixture_matches,
+                      'all_article_fields_match':fixture_matches,
                       'article_permissions':4,'contenttype_group_user_relations_verified':True},ensure_ascii=False))
 elif mode=='write':
     a=Article.objects.get(slug='dz05-durable')
@@ -67,4 +69,8 @@ elif mode=='finish':
     Article.objects.filter(slug__in=['dz05-durable','dz05-media-proof']).delete()
     get_user_model().objects.filter(username='dz05-check').delete()
     Group.objects.filter(name='dz05-check-editors').delete()
-    print(json.dumps({'source_articles_remaining':Article.objects.count(),'temporary_admin_removed':True}))
+    baseline=json.loads(Path('/root/dz05-verification-baseline.json').read_text())
+    full=json.loads(serializers.serialize('json',Article.objects.order_by('pk'),use_natural_foreign_keys=True))
+    assert hashlib.sha256(json.dumps(full,sort_keys=True).encode()).hexdigest()==baseline['article_sha256'],'Pre-existing article data changed during failure checks'
+    print(json.dumps({'source_articles_remaining':Article.objects.count(),'temporary_admin_removed':True,
+                      'preexisting_article_data_preserved':True}))

@@ -6,6 +6,8 @@ import time
 import threading
 import re
 import urllib.request
+import ipaddress
+import hashlib
 from remote import connect,close,run,auth,ROOT,LOCAL
 from selectel_api import NovaClient
 from http_admin import verify_admin
@@ -13,6 +15,61 @@ from http_admin import verify_admin
 MANAGE="sudo sh -c 'set -a; . /opt/otus-dz05/app.env; set +a; /opt/otus-dz05/venv/bin/python /opt/otus-dz05/app/manage.py "
 
 def manage(client,command):return run(client,MANAGE+command+"'",quiet=True)
+
+
+def verify_cycle_control(lab, run_id):
+    if not re.fullmatch(r'[0-9a-f]{32}', run_id):
+        raise ValueError('Invalid temporary run identity')
+    with urllib.request.urlopen(lab['site_url'] + '/articles/cycle-control-' + run_id + '/', timeout=10) as response:
+        page = response.read()
+        if response.status != 200 or b'Committed before expansion' not in page:
+            raise RuntimeError('Control article cannot be read through the portal')
+    media = re.search(rb'src="(/media/[^\"]+)"', page)
+    if not media:
+        raise RuntimeError('Control article image missing')
+    with urllib.request.urlopen(lab['site_url'] + media.group(1).decode(), timeout=10) as response:
+        image = response.read()
+        if response.status != 200 or not image:
+            raise RuntimeError('Control media cannot be read through the portal')
+    return {'article_read': True, 'media_sha256': hashlib.sha256(image).hexdigest()}
+
+
+def verify_django_tests(lab, client):
+    nodes = sorted(n for n in lab['server_ids'] if n != 'app')
+    members = status(lab, nodes[0])
+    primary_host = next(m[0] for m in members if m[1] == 'ONLINE' and m[2] == 'PRIMARY')
+    primary = next(n for n in nodes if lab['private_ips'][n] == primary_host)
+    db = connect(lab, primary)
+    account = "'otus'@'" + str(ipaddress.IPv4Address(lab['private_ips']['app'])) + "'"
+    try:
+        run(db, 'sudo mysql', 'GRANT ALL PRIVILEGES ON test_otus.* TO ' + account + ';', quiet=True)
+        manage(client, 'test knowledge --noinput --verbosity 1')
+    finally:
+        try:
+            run(db, 'sudo mysql', 'REVOKE ALL PRIVILEGES ON test_otus.* FROM ' + account + ';', quiet=True)
+        finally:
+            close(db)
+
+
+def verify_reconcile(lab, baseline):
+    from remote import assert_online, capture_data
+    members = assert_online(lab)
+    if capture_data(lab) != baseline['data']:
+        raise RuntimeError('Django rows or media changed during configuration; recovery files preserved')
+    nodes = sorted(n for n in lab['server_ids'] if n != 'app')
+    snapshots = {n: database_snapshot(lab, n) for n in nodes}
+    if len({s['article_sha256'] for s in snapshots.values()}) != 1:
+        raise RuntimeError('Expanded replicas disagree')
+    client = connect(lab)
+    try:
+        crud = manage(client, 'verify_database').strip()
+        if 'CRUD PASS' not in crud:
+            raise RuntimeError('Application CRUD did not succeed')
+    finally:
+        close(client)
+    return {'all_requested_members_online': True, 'existing_vm_ids_preserved': True,
+            'django_rows_and_media_preserved': True, 'replica_data_matches': True,
+            'member_count': len(members), 'http': http(lab), 'crud_pass': True}
 
 def status(lab,node):
     client=connect(lab,node)
@@ -48,20 +105,24 @@ SELECT COUNT(*),SHA2(GROUP_CONCAT(CONCAT_WS(':',id,slug,title,lesson,summary,bod
     finally:close(client)
 
 def verify(lab):
+    db_nodes = sorted(n for n in lab['server_ids'] if n != 'app')
+    member_count = len(db_nodes)
     report={'time_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'success':False,'failures':[],
             'region':lab['region'],'admin_ssh_port':lab['admin_ssh_port']}
     client=connect(lab)
     try:
+        verify_django_tests(lab, client)
+        report['django_tests_passed'] = True
         report['migration']=json.loads(run(client,'sudo /opt/otus-dz05/venv/bin/python /home/otus/dz05/evidence.py prepare',quiet=True))
         report['admin_http']=verify_admin(client)
         report['http_before']=http(lab)
         report['crud_before']=manage(client,'verify_database').strip()
-        initial=status(lab,'db1')
-        if len(initial)!=3 or any(r[1]!='ONLINE' for r in initial):raise RuntimeError('Cluster not three ONLINE')
+        initial=status(lab,db_nodes[0])
+        if len(initial)!=member_count or any(r[1]!='ONLINE' for r in initial):raise RuntimeError('Cluster not fully ONLINE')
         report['initial_members']=initial
         api=NovaClient(auth())
         for role in ['PRIMARY','SECONDARY']:
-            current=status(lab,'db1')
+            current=status(lab,db_nodes[0])
             host=next(r[0] for r in current if r[2]==role)
             node=next(n for n,ip in lab['private_ips'].items() if ip==host)
             uid=lab['server_ids'][node]
@@ -83,7 +144,7 @@ def verify(lab):
                     stop_monitor.wait(1)
             worker=threading.Thread(target=monitor,daemon=True)
             worker.start()
-            survivor=next(n for n in ['db1','db2','db3'] if n!=node)
+            survivor=next(n for n in db_nodes if n!=node)
             try:
                 api.request('/servers/'+uid+'/action',{'os-stop':None})
                 # Wait for actual cloud power-off before judging cluster continuity.
@@ -95,7 +156,7 @@ def verify(lab):
                     try:
                         members=status(lab,survivor)
                         live=[r for r in members if r[1]=='ONLINE']
-                        if len(live)!=2 or sum(r[2]=='PRIMARY' for r in live)!=1:raise RuntimeError('Waiting for majority')
+                        if len(live)!=member_count-1 or sum(r[2]=='PRIMARY' for r in live)!=1:raise RuntimeError('Waiting for majority')
                         crud=manage(client,'verify_database').strip()
                         durable=json.loads(run(client,'sudo /opt/otus-dz05/venv/bin/python /home/otus/dz05/evidence.py write '+role,quiet=True))
                         pages=http(lab)
@@ -112,18 +173,18 @@ def verify(lab):
                     stop_monitor.set()
                     worker.join(timeout=5)
                     scenario['readiness_samples']=availability
-            for _ in range(120):
-                try:
-                    members=status(lab,survivor)
-                    if len(members)==3 and all(r[1]=='ONLINE' for r in members):break
-                except Exception:pass
-                time.sleep(3)
-            else:raise RuntimeError('Node failed to rejoin after restart')
-            scenario['recovered_members']=members
+                for _ in range(120):
+                    try:
+                        members=status(lab,survivor)
+                        if len(members)==member_count and all(r[1]=='ONLINE' for r in members):break
+                    except Exception:pass
+                    time.sleep(3)
+                else:raise RuntimeError('Node failed to rejoin after restart')
+                scenario['recovered_members']=members
             report['failures'].append(scenario)
         report['http_after']=http(lab)
         report['crud_after']=manage(client,'verify_database').strip()
-        report['replica_snapshots']={node:database_snapshot(lab,node) for node in ['db1','db2','db3']}
+        report['replica_snapshots']={node:database_snapshot(lab,node) for node in db_nodes}
         if len({r['article_sha256'] for r in report['replica_snapshots'].values()})!=1:
             raise RuntimeError('Replica article checksums differ')
         report['final_cleanup']=json.loads(run(client,'sudo /opt/otus-dz05/venv/bin/python /home/otus/dz05/evidence.py finish',quiet=True))

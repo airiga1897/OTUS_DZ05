@@ -95,11 +95,7 @@ resource "openstack_compute_instance_v2" "node" {
     hostname         = "${var.name_prefix}-${each.key}"
     users            = [{ name = "otus", groups = ["sudo"], shell = "/bin/bash", sudo = "ALL=(ALL) NOPASSWD:ALL", lock_passwd = true, ssh_authorized_keys = [trimspace(file(pathexpand(var.ssh_public_key_path)))] }]
     ssh_pwauth       = false
-    write_files = each.value.role == "app" ? concat(var.admin_ssh_port != 22 ? [{
-      path        = "/etc/ssh/sshd_config.d/10-dz05-admin-port.conf"
-      permissions = "0644"
-      content     = "Port 22\nPort ${var.admin_ssh_port}\n"
-      }] : [], [{
+    write_files = each.value.role == "app" ? [{
       path        = "/root/otus-dz05-route.py"
       permissions = "0600"
       content     = templatefile("${path.module}/../config/route-probe.py.tftpl", { probe_key = var.route_probe_key })
@@ -107,10 +103,8 @@ resource "openstack_compute_instance_v2" "node" {
       path        = "/etc/systemd/system/otus-dz05-route.service"
       permissions = "0644"
       content     = "[Unit]\nAfter=network.target\n[Service]\nExecStart=/usr/bin/python3 /root/otus-dz05-route.py\nRestart=on-failure\n[Install]\nWantedBy=multi-user.target\n"
-    }]) : []
-    runcmd = each.value.role == "app" ? concat(var.admin_ssh_port != 22 ? [
-      "sshd -t && systemctl stop ssh.service ssh.socket && systemctl disable ssh.socket && systemctl enable --now ssh.service"
-    ] : [], ["systemctl daemon-reload && systemctl enable --now otus-dz05-route.service"]) : []
+    }] : []
+    runcmd = each.value.role == "app" ? ["systemctl daemon-reload && systemctl enable --now otus-dz05-route.service"] : []
   })}"
   depends_on = [openstack_networking_router_interface_v2.lab]
 }

@@ -1,6 +1,7 @@
 """Single editable configuration; credentials and deployment results are separate."""
 import ipaddress
 import json
+import os
 import re
 from pathlib import Path
 
@@ -26,8 +27,8 @@ def write_json(path, data):
 
 def load_config():
     config = read_json(CONFIG)
-    if not re.fullmatch(r'[0-9a-f]{32}', config['project_id']):
-        raise ValueError('Set project_id in .local/lab-config.json')
+    if any(k in config for k in ('project_id', 'domain_name', 'username', 'password')):
+        raise ValueError('Operator inputs belong in the session, not lab-config.json')
     if not config['pools'] or any(p != 'auto' and not re.fullmatch(r'ru-\d+', p) for p in config['pools']):
         raise ValueError('Use Russian Selectel pools or auto in lab-config.json')
     if not re.fullmatch(r'otus-dz05(?:-[a-z0-9-]+)?', config['name_prefix']):
@@ -35,14 +36,16 @@ def load_config():
     subnet = ipaddress.IPv4Network(config['subnet_cidr'], strict=True)
     if not subnet.is_private:
         raise ValueError('Private IPv4 subnet required')
-    if set(config['nodes']) != {'app', 'db1', 'db2', 'db3'}:
-        raise ValueError('Expected app and three database nodes')
+    if 'app' not in config['nodes'] or not 4 <= len(config['nodes']) <= 10:
+        raise ValueError('Expected one app and 3 to 9 database members')
+    if any(not re.fullmatch(r'db[1-9]', n) for n in config['nodes'] if n != 'app'):
+        raise ValueError('Database node names must be db1 through db9')
     hosts = [int(n['host']) for n in config['nodes'].values()]
-    if len(set(hosts)) != 4 or any(h <= 0 or h >= subnet.num_addresses - 1 for h in hosts):
+    if len(set(hosts)) != len(config['nodes']) or any(h <= 0 or h >= subnet.num_addresses - 1 for h in hosts):
         raise ValueError('Invalid or duplicate private host offsets')
     if any(n['role'] != ('app' if name == 'app' else 'db') for name, n in config['nodes'].items()):
         raise ValueError('Unexpected node roles')
-    if config['admin_ssh_port'] not in (22, 443):
+    if config['admin_ssh_port'] != 22:
         raise ValueError('Unsupported external SSH port')
     for cidr in config['admin_cidrs']:
         network = ipaddress.IPv4Network(cidr, strict=True)
@@ -64,7 +67,7 @@ def load_deployment():
     if not DEPLOYMENT.exists():
         raise ValueError('No saved deployment context; do not guess the pool for existing state')
     context = read_json(DEPLOYMENT)
-    if context['project_id'] != context['config']['project_id']:
+    if not re.fullmatch(r'[0-9a-f]{32}', context['project_id']):
         raise ValueError('Inconsistent deployment project')
     if context.get('state_lineage') and STATE.exists():
         if read_json(STATE).get('lineage') != context['state_lineage']:
@@ -79,9 +82,25 @@ def load_deployment():
     return context
 
 
+def auth_settings() -> dict:
+    return read_json(ROOT / 'config/selectel-auth.json')
+
+
+def credentials_from_env() -> dict[str, str]:
+    schema = auth_settings()
+    fields = {key: field['env'] for key, field in schema['fields'].items()}
+    missing = [name for name in fields.values() if not os.environ.get(name, '').strip()]
+    if missing:
+        raise ValueError('Load env.ps1; missing: ' + ', '.join(missing))
+    credentials = {key: os.environ[name] for key, name in fields.items()}
+    if not re.fullmatch(r'[0-9a-f]{32}', credentials['project_id']):
+        raise ValueError('Invalid OS_PROJECT_ID')
+    credentials['auth_url'] = schema['auth_url']
+    return credentials
+
+
 def cloud_config(context=None):
-    # Old credential files remain readable, but their project/region are not authoritative.
-    credentials = read_json(LOCAL / 'operator.json')
+    credentials = credentials_from_env()
     if context is None:
         if state_resources():
             context = load_deployment()
@@ -90,7 +109,9 @@ def cloud_config(context=None):
         else:
             config = load_config()
             explicit = next((p for p in config['pools'] if p != 'auto'), None)
-            context = {'project_id': config['project_id'], 'region': explicit}
+            context = {'project_id': credentials['project_id'], 'region': explicit}
+    if context['project_id'] != credentials['project_id']:
+        raise ValueError('Session project differs from saved deployment project')
     return {k: credentials[k] for k in ('auth_url', 'domain_name', 'username', 'password')} | {
         'project_id': context['project_id'], 'region': context.get('region')}
 

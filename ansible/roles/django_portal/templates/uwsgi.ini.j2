@@ -1,0 +1,9 @@
+[uwsgi]
+chdir=/opt/otus-dz05/app
+module=config.wsgi:application
+master=true
+processes=2
+socket=127.0.0.1:8000
+vacuum=true
+die-on-term=true
+need-app=true

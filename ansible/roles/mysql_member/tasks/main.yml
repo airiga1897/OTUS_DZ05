@@ -1,0 +1,31 @@
+---
+- name: Configure replication without changing stable server identity
+  ansible.builtin.template:
+    src: mysql.cnf.j2
+    dest: /etc/mysql/mysql.conf.d/zz-dz05.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart mysql
+
+- name: Apply configuration before connecting to the member
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure mysql is running
+  ansible.builtin.systemd_service:
+    name: mysql
+    enabled: true
+    state: started
+
+- name: Create the AdminAPI account through the local Unix socket on new members
+  ansible.builtin.command:
+    argv: [mysql]
+    stdin: "CREATE USER IF NOT EXISTS 'icadmin'@'{{ dz05.subnet_cidr | dz05_mysql_network }}' IDENTIFIED BY '{{ dz05.cluster_password }}'; GRANT ALL PRIVILEGES ON *.* TO 'icadmin'@'{{ dz05.subnet_cidr | dz05_mysql_network }}' WITH GRANT OPTION;"
+  no_log: true
+  when: dz05_new
+
+- name: Wait for MySQL TCP listener
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: 3306
+    timeout: 90

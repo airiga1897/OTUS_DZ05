@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 import sys
-from settings import ROOT, DEPLOYMENT, INPUTS, cloud_config, load_deployment, render_inputs
+from settings import ROOT, DEPLOYMENT, INPUTS, cloud_config, load_deployment, render_inputs, auth_settings
 
 
 def operator_env():
@@ -11,11 +11,11 @@ def operator_env():
     env = dict(os.environ)
     # Ignore stale TF_VAR values inherited from another project or shell session.
     for name in list(env):
-        if name.startswith('TF_VAR_'):
+        if name.startswith('TF_VAR_') or name in {'TF_LOG', 'TF_LOG_CORE', 'TF_LOG_PROVIDER', 'TF_LOG_PATH', 'OS_DEBUG', 'OTUS_SELECTEL_AUTH'}:
             del env[name]
-    for key, field in {'OS_AUTH_URL': 'auth_url', 'OS_PROJECT_ID': 'project_id',
-                       'OS_REGION_NAME': 'region', 'OS_USER_DOMAIN_NAME': 'domain_name',
-                       'OS_USERNAME': 'username', 'OS_PASSWORD': 'password'}.items():
+    mapping = {field['env']: key for key, field in auth_settings()['fields'].items()}
+    mapping.update(OS_AUTH_URL='auth_url', OS_REGION_NAME='region')
+    for key, field in mapping.items():
         if config.get(field):
             env[key] = config[field]
         else:

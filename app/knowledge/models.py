@@ -1,6 +1,16 @@
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
+
+class InitialDataImport(models.Model):
+    name = models.CharField(max_length=64, primary_key=True)
+    fixture_sha256 = models.CharField(max_length=64)
+    origin = models.CharField(max_length=32)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        default_permissions = ()
+
 class Article(models.Model):
     title = models.CharField("Заголовок", max_length=180)
     slug = models.SlugField("Адрес", unique=True)

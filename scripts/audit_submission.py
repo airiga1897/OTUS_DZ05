@@ -1,4 +1,5 @@
 """Check Git candidates against actual local secret values without printing them."""
+import os
 import json
 from pathlib import Path
 import subprocess
@@ -6,7 +7,7 @@ import re
 
 ROOT=Path(__file__).resolve().parents[1]
 files=subprocess.check_output(['git','ls-files','--cached','--others','--exclude-standard'],cwd=ROOT,text=True).splitlines()
-values=[]
+values=[os.environ['OS_PASSWORD'].encode()] if os.environ.get('OS_PASSWORD') else []
 for path,keys in [(ROOT/'.local/operator.json',['password']),
                   (ROOT/'.local/app-secrets.json',['cluster_password','db_password','django_secret_key']),
                   (ROOT/'.local/route-secret.json',['route_probe_key'])]:

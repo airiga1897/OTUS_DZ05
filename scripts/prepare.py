@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from placement import candidates
 from settings import (ROOT, LOCAL, CONFIG, DEPLOYMENT, STATE, load_config, read_json,
-                      write_json, key_path, render_inputs, state_resources)
+                      write_json, key_path, render_inputs, state_resources, credentials_from_env)
 
 
 def ensure_local(config):
@@ -44,7 +44,7 @@ def context_for(config, placement):
     variables['ssh_public_key_path'] = str(key_path(config).with_suffix('.pub'))
     variables['route_probe_key'] = read_json(LOCAL / 'route-secret.json')['route_probe_key']
     return {'schema_version': 1, 'deployment_id': uuid.uuid4().hex, 'phase': 'prepared',
-            'project_id': config['project_id'], **placement, 'config': copy.deepcopy(config),
+            'project_id': credentials_from_env()['project_id'], **placement, 'config': copy.deepcopy(config),
             'terraform': variables, 'state_lineage': read_json(STATE).get('lineage') if STATE.exists() else None}
 
 

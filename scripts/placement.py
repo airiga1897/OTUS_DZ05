@@ -2,7 +2,7 @@
 import re
 import urllib.error
 from selectel_api import authenticate, request_json
-from settings import cloud_config
+from settings import cloud_config, credentials_from_env
 
 SERVICES = ('compute', 'image', 'volumev3', 'network')
 
@@ -37,7 +37,7 @@ def ordered_pools(config, catalog):
 
 
 def candidates(config):
-    token, catalog = authenticate(cloud_config({'project_id': config['project_id']}))
+    token, catalog = authenticate(cloud_config({'project_id': credentials_from_env()['project_id']}))
     for pool in ordered_pools(config, catalog):
         endpoints = endpoints_for(catalog, pool)
         try:

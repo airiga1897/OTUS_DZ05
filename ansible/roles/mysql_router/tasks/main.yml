@@ -1,0 +1,56 @@
+---
+- name: Ensure Router service group
+  ansible.builtin.group:
+    name: mysqlrouter
+    system: true
+
+- name: Ensure Router service account
+  ansible.builtin.user:
+    name: mysqlrouter
+    group: mysqlrouter
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Bootstrap Router only when its configuration is absent
+  ansible.builtin.command:
+    argv:
+      - mysqlrouter
+      - --bootstrap
+      - "icadmin@{{ dz05.ips[dz05.seed_node] }}:3306"
+      - --directory
+      - /etc/otus-router
+      - --user
+      - mysqlrouter
+      - --conf-bind-address
+      - 127.0.0.1
+      - --report-host
+      - "{{ dz05.ips.app }}"
+      - --disable-rest
+    stdin: "{{ dz05.cluster_password }}"
+    creates: /etc/otus-router/mysqlrouter.conf
+  no_log: true
+  notify: Restart Router
+
+- name: Install Router service
+  ansible.builtin.template:
+    src: otus-router.service.j2
+    dest: /etc/systemd/system/otus-router.service
+    mode: '0644'
+  notify: Restart Router
+
+- name: Apply Router service changes
+  ansible.builtin.meta: flush_handlers
+
+- name: Start Router
+  ansible.builtin.systemd_service:
+    name: otus-router
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for Router listener before migrations
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 6446
+    timeout: 90

@@ -1,5 +1,6 @@
 """Safety checks for configuration ownership and pool fallback; no cloud calls."""
 import copy
+import os
 import json
 from pathlib import Path
 import sys
@@ -8,6 +9,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+(ROOT / '.local').mkdir(exist_ok=True)
 sys.path.insert(0, str(ROOT / 'scripts'))
 import settings
 import lab
@@ -18,8 +20,7 @@ import remote
 class ConfigurationSafety(unittest.TestCase):
     def setUp(self):
         self.config = json.loads((ROOT / 'config/lab.example.json').read_text())
-        self.config['project_id'] = 'a' * 32
-        self.context = {'project_id': self.config['project_id'], 'region': 'ru-9',
+        self.context = {'project_id': 'a' * 32, 'region': 'ru-9',
                         'availability_zone': 'ru-9a', 'config': self.config,
                         'terraform': {}, 'phase': 'active', 'deployment_id': 'first'}
 
@@ -55,7 +56,7 @@ class ConfigurationSafety(unittest.TestCase):
             lab.validate_plan(plan, context=self.context)
 
     def test_config_edit_does_not_redirect_existing_deployment(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT / '.local') as directory:
             local = Path(directory)
             settings.write_json(local / 'operator.json', {
                 'auth_url': 'https://cloud.api.selcloud.ru/identity/v3', 'domain_name': 'account',
@@ -63,16 +64,17 @@ class ConfigurationSafety(unittest.TestCase):
             settings.write_json(local / 'deployment.json', self.context)
             settings.write_json(local / 'terraform.tfstate', {'resources': []})
             changed_config = copy.deepcopy(self.config)
-            changed_config.update(project_id='b' * 32, pools=['ru-7'])
+            changed_config.update(pools=['ru-7'])
             settings.write_json(local / 'config.json', changed_config)
             with patch.multiple(settings, LOCAL=local, CONFIG=local / 'config.json',
                                 DEPLOYMENT=local / 'deployment.json', STATE=local / 'terraform.tfstate'):
-                auth = settings.cloud_config()
+                with patch.dict(os.environ, dict(OS_PROJECT_ID='a' * 32, OS_USERNAME='operator', OS_PASSWORD='test-password', OS_USER_DOMAIN_NAME='account'), clear=True):
+                    auth = settings.cloud_config()
                 self.assertEqual(auth['region'], 'ru-9')
                 self.assertEqual(auth['project_id'], 'a' * 32)
 
     def test_state_without_context_refused(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT / '.local') as directory:
             local = Path(directory)
             settings.write_json(local / 'state', {'resources': [{'mode': 'managed', 'instances': [{}]}]})
             with patch.multiple(settings, STATE=local / 'state', DEPLOYMENT=local / 'missing'):
@@ -111,9 +113,8 @@ class ConfigurationSafety(unittest.TestCase):
         self.run_fallback(cleanup_fails=False)
 
     def run_fallback(self, cleanup_fails):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(dir=ROOT / '.local') as directory:
             local = Path(directory)
-            (local / 'reconstructed-portal.json').write_text('[]')
             (local / 'state').write_text('{"lineage":"test"}')
             selected = {}
             events = []
@@ -134,11 +135,12 @@ class ConfigurationSafety(unittest.TestCase):
                 if args[0] == 'output':
                     return '{}'
                 return ''
-            def destroy():
+            def destroy(clean_local=True):
                 events.append('cleanup:' + selected['region'])
+                self.assertFalse(clean_local)
                 if cleanup_fails:
                     raise RuntimeError('Cleanup incomplete')
-            with patch.multiple(lab, LOCAL=local, STATE=local / 'state', DEPLOYMENT=local / 'missing',
+            with patch.multiple(lab, ROOT=local, LOCAL=local, STATE=local / 'state', DEPLOYMENT=local / 'missing',
                                 state_resources=lambda: [], load_config=lambda: self.config,
                                 reject_legacy_inputs=lambda: None, ensure_local=lambda c: None,
                                 candidates=lambda c: iter(attempts), context_for=context_for,
@@ -147,7 +149,8 @@ class ConfigurationSafety(unittest.TestCase):
                                 load_deployment=lambda: copy.deepcopy(selected), tf=tf,
                                 scheduler_unavailable=lambda e, c: True, destroy=destroy,
                                 key_path=lambda c: local / 'key', discover_route=lambda i: None), \
-                 patch.object(remote, 'configure'):
+                 patch.object(remote, 'configure'), \
+                 patch.object(lab.subprocess, 'run', side_effect=AssertionError('deploy must not reconstruct a database')):
                 if cleanup_fails:
                     with self.assertRaises(RuntimeError):
                         lab.deploy()

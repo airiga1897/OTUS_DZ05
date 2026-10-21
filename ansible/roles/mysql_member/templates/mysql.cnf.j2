@@ -1,0 +1,13 @@
+[mysqld]
+server_id={{ inventory_hostname[2:] | int }}
+bind-address=0.0.0.0
+skip_name_resolve=ON
+report_host={{ ansible_host }}
+log_bin=mysql-bin
+binlog_format=ROW
+binlog_transaction_dependency_tracking=WRITESET
+gtid_mode=ON
+enforce_gtid_consistency=ON
+transaction_write_set_extraction=XXHASH64
+innodb_buffer_pool_size=512M
+max_connections=100

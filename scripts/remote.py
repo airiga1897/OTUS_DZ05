@@ -1,13 +1,9 @@
-"""Trusted Nova-console SSH transport and script-based configuration."""
+"""Trusted Nova-console SSH transport for configuration and separate verification."""
 import base64
-import concurrent.futures
 import json
 from pathlib import Path
 import re
-import secrets
-import sys
 import time
-import tarfile
 import paramiko
 from selectel_api import NovaClient
 from settings import cloud_config, load_deployment
@@ -95,67 +91,26 @@ def put(client,source,destination):
     with client.open_sftp() as sftp:
         sftp.put(str(source),destination)
 
-def configure(lab):
-    trusted_keys(lab)
-    for attempt in range(12):
-        try:
-            ready=connect(lab)
-            close(ready)
-            break
-        except (OSError,paramiko.SSHException) as error:
-            print('Waiting for application SSH, attempt '+str(attempt+1)+': '+type(error).__name__,flush=True)
-            time.sleep(3)
-    else:raise RuntimeError('Application VM SSH did not become ready')
-    secretpath=LOCAL/'app-secrets.json'
-    if not secretpath.exists():
-        secretpath.write_text(json.dumps({'cluster_password':secrets.token_hex(32),
-                                        'db_password':secrets.token_hex(32),
-                                        'django_secret_key':secrets.token_hex(48)}),encoding='utf-8')
-    config=dict(json.loads(secretpath.read_text()),ips=lab['private_ips'],public_ip=lab['app_public_ip'],
-                subnet_cidr=lab['subnet_cidr'],name_prefix=lab['name_prefix'])
-    def node_setup(node):
-        client=connect(lab,node)
-        try:
-            command="""cloud-init status --wait >/tmp/dz05-cloud-init-status.txt
-rc=$?
-if [ "$rc" != 0 ] && [ "$rc" != 2 ]; then cat /tmp/dz05-cloud-init-status.txt; exit "$rc"; fi
-sudo python3 - "$rc" <<'PY'
-import json,sys
-d=json.load(open('/run/cloud-init/result.json'))
-e=d.get('v1',{}).get('errors',[])
-print(json.dumps({'status':'done','fatal_errors':e,'warning_exit_code':int(sys.argv[1])}))
-sys.exit(bool(e))
-PY
-"""
-            cloud_status=json.loads(run(client,command,quiet=True).strip().splitlines()[-1])
-            cloud_status['node']=node
-            run(client,'mkdir -p /home/otus/dz05')
-            put(client,ROOT/'scripts/node.py','/home/otus/dz05/node.py')
-            run(client,'sudo sh -c \'umask 077; cat > /root/dz05.json\'',json.dumps(config),quiet=True)
-            run(client,'sudo python3 /home/otus/dz05/node.py '+node)
-            return cloud_status
-        finally:close(client)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-        futures=[pool.submit(node_setup,n) for n in lab['server_ids']]
-        cloud_statuses=[f.result() for f in futures]
-    (ROOT/'docs/cloud-init.json').write_text(json.dumps(cloud_statuses,indent=2)+'\n',encoding='utf-8')
-    client=connect(lab,'db1')
+
+def assert_online(lab):
+    from verify import status
+    nodes = sorted(n for n in lab['server_ids'] if n != 'app')
+    members = status(lab, nodes[0])
+    if len(members) != len(nodes) or any(m[1] != 'ONLINE' for m in members):
+        raise RuntimeError('Every existing database member must be ONLINE before reconfiguration')
+    if {m[0] for m in members} != {lab['private_ips'][n] for n in nodes}:
+        raise RuntimeError('Cluster membership differs from saved inventory')
+    return members
+
+
+def capture_data(lab):
+    client = connect(lab)
     try:
-        put(client,ROOT/'scripts/cluster.py','/home/otus/dz05/cluster.py')
-        run(client,'sudo mysqlsh --no-wizard --py --file /home/otus/dz05/cluster.py')
-    finally:close(client)
-    client=connect(lab)
-    try:
-        # Only project source files are uploaded; no operator credentials or Terraform state.
-        archive=LOCAL/'app-source.tar.gz'
-        with tarfile.open(archive,'w:gz') as tar:
-            for path in (ROOT/'app').rglob('*'):
-                if path.is_file() and '__pycache__' not in path.parts:
-                    tar.add(path,arcname='app/'+path.relative_to(ROOT/'app').as_posix())
-        put(client,archive,'/home/otus/dz05/app-source.tar.gz')
-        run(client,'tar -xzf /home/otus/dz05/app-source.tar.gz -C /home/otus/dz05',quiet=True)
-        put(client,ROOT/'scripts/app.py','/home/otus/dz05/app.py')
-        put(client,ROOT/'scripts/evidence.py','/home/otus/dz05/evidence.py')
-        put(client,LOCAL/'reconstructed-portal.json','/home/otus/dz05/portal.json')
-        run(client,'sudo python3 /home/otus/dz05/app.py')
-    finally:close(client)
+        put(client, ROOT / 'scripts/data_snapshot.py', '/home/otus/dz05/data_snapshot.py')
+        return json.loads(run(client, 'sudo /opt/otus-dz05/venv/bin/python /home/otus/dz05/data_snapshot.py', quiet=True))
+    finally:
+        close(client)
+
+def configure(lab, configured_nodes=None):
+    from ansible_configuration import configure as configure_ansible
+    configure_ansible(lab, configured_nodes)

@@ -24,3 +24,5 @@ secrets.yml
 *.key
 portal*.json
 reconstructed-*.json
+
+.test-cycle.lock

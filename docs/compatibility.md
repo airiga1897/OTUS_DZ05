@@ -1,6 +1,6 @@
 # Проверка портала ДЗ04
 
-Изучены models.py, 0001_initial.py, views.py, tests.py и seed_lessons.
+Изучены models.py, 0001_initial.py, views.py, tests.py и начальная фикстура.
 Article использует BigAutoField, CharField, SlugField, PositiveSmallIntegerField,
 TextField, ImageField, BooleanField, DateTimeField. Поля поддерживаются MySQL.
 У Article и стандартных таблиц Django есть первичные ключи, необходимые Group Replication.
@@ -19,10 +19,6 @@ strict SQL mode, isolation level READ COMMITTED. Соединения закры
 Пять тестов Django выполнены на MySQL; работа кластера подтверждена
 [проверками приложения, отказов и восстановления](results.md).
 
-При поиске в ДЗ04 (включая .local, исключая инструменты, .git и .terraform)
-не найдены SQL-дампы, SQLite БД или прикладные JSON-фикстуры.
-JSON-каталоги облака, tfvars и отчёты не являются данными портала.
-seed_lessons содержит четыре исходных материала без вложений.
-Четыре статьи восстановлены из seed_lessons, экспортированы dumpdata
-и импортированы в MySQL через loaddata. Происхождение данных зафиксировано
-в [отчёте реконструкции](reconstruction.json).
+Начальные данные подготовлены по материалам ДЗ04 и загружаются Django-фикстурой.
+Фикстура содержит пять статей без вложений; схема и стандартные права
+создаются миграциями. [Загрузка и проверки](migration.md).

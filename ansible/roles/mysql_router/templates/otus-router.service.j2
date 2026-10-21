@@ -1,0 +1,11 @@
+[Unit]
+After=network-online.target
+Wants=network-online.target
+[Service]
+User=mysqlrouter
+Group=mysqlrouter
+ExecStart=/usr/bin/mysqlrouter -c /etc/otus-router/mysqlrouter.conf
+Restart=on-failure
+RestartSec=2
+[Install]
+WantedBy=multi-user.target

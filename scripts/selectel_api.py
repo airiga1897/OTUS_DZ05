@@ -1,6 +1,5 @@
 """Small HTTPS-only Keystone/Nova client; credentials and tokens stay in memory."""
 import json
-import os
 import urllib.parse
 import urllib.request
 
@@ -40,13 +39,6 @@ def authenticate(config):
     if identity.get("project", {}).get("id") != config["project_id"]:
         raise ValueError("Unexpected project")
     return headers["X-Subject-Token"], identity["catalog"]
-
-
-def config_from_env():
-    return {"auth_url": os.environ.get("OS_AUTH_URL", AUTH_URL),
-        "project_id": os.environ["OS_PROJECT_ID"], "region": os.environ["OS_REGION_NAME"],
-        "domain_name": os.environ["OS_USER_DOMAIN_NAME"],
-        "username": os.environ["OS_USERNAME"], "password": os.environ["OS_PASSWORD"]}
 
 
 class NovaClient:

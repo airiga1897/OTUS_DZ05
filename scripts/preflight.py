@@ -46,7 +46,7 @@ def collect(context):
     return raw
 
 
-def sufficient(context, raw):
+def sufficient(context, raw, incremental=False):
     config = context['config']
     extra = config['additional_reservation']
     def capacity(item, need, used='in_use'):
@@ -70,7 +70,9 @@ def sufficient(context, raw):
             raise CandidateUnavailable('Insufficient disk capacity')
     if key not in volume:
         raise CandidateUnavailable('Selected disk type quota unavailable')
-    need_network = {'floatingip': 1, 'network': 1, 'subnet': 1, 'router': 1, 'port': 6, 'security_group': 1}
+    need_network = {'port': totals['instances']} if incremental else {
+        'floatingip': 1, 'network': 1, 'subnet': 1, 'router': 1,
+        'port': totals['instances'] + 2, 'security_group': 1}
     for key, need in need_network.items():
         if not capacity(raw['network']['quota'][key], need + extra.get(key, 0), 'used'):
             raise CandidateUnavailable('Insufficient network capacity')

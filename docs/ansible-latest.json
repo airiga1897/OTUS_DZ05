@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "controller": "app Ubuntu 24.04 / Python 3.12",
+  "ansible_core": "2.20.10",
+  "bootstrap": true,
+  "new_nodes": [
+    "app",
+    "db1",
+    "db2",
+    "db3"
+  ],
+  "roles": [
+    "common",
+    "mysql_member",
+    "mysql_cluster",
+    "mysql_router",
+    "django_portal"
+  ]
+}

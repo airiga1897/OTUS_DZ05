@@ -1,5 +1,4 @@
 {
-  "project_id": "",
   "pools": ["ru-9", "auto"],
   "segment": null,
   "name_prefix": "otus-dz05",

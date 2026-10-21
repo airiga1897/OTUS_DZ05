@@ -1,12 +1,12 @@
 {
-  "time_utc": "2026-10-18T18:01:19.837930+00:00",
+  "time_utc": "2026-10-20T19:24:01.107465+00:00",
   "origin": "reconstructed_from_DZ04_seed_lessons_source",
   "historical_postgresql_data_migrated": false,
   "mysql_import_performed": false,
   "models": {
     "knowledge.article": 4
   },
-  "fixture_sha256": "b08b92fb86271d1e9bafa72d06fa99eb7a49a0f54d710682228cddc8e15e40ae",
+  "fixture_sha256": "41fda240644f9433752c75f5b1a0d02963a28891b95616bb2f4449bafeef9e9a",
   "article_pks": [
     1,
     2,

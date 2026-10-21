@@ -3,11 +3,12 @@ import argparse
 import datetime
 import ipaddress
 import json
+import shutil
 import subprocess
 import sys
 import time
 from selectel_api import authenticate, request_json, NovaClient
-from settings import (ROOT, LOCAL, DEPLOYMENT, INPUTS, STATE, load_config, load_deployment,
+from settings import (ROOT, LOCAL, CONFIG, DEPLOYMENT, INPUTS, STATE, load_config, load_deployment,
                       cloud_config, read_json, write_json, state_resources, key_path)
 from tf import operator_env
 from placement import candidates, endpoints_for, CandidateUnavailable
@@ -68,7 +69,7 @@ def validate_plan(plan, destroy=False, context=None):
         if resource['type'] == 'openstack_networking_subnet_v2' and values.get('cidr') != config['subnet_cidr']:
             raise ValueError('Foreign subnet')
     if not destroy and sum(r['type'] == 'openstack_compute_instance_v2' for r in changes) != len(config['nodes']):
-        raise ValueError('Expected all four DZ05 instances')
+        raise ValueError('Expected every configured DZ05 instance')
 
 
 def check_existing(context, discovery):
@@ -106,19 +107,25 @@ def scheduler_unavailable(error, context):
     return found
 
 
-def deploy():
+def deploy(test_run_id=None):
+    lock = ROOT / '.test-cycle.lock'
+    if lock.exists() and lock.read_text(encoding='utf-8') != test_run_id:
+        raise ValueError('A temporary test owns this clone; recover it before ordinary deploy')
     if state_resources():
-        raise ValueError('Existing DZ05 resources: use verify or destroy before a fresh deploy')
+        if test_run_id and load_deployment().get('test_run_id') != test_run_id:
+            raise ValueError('Existing deployment is not owned by this temporary run')
+        from growth import reconcile
+        return reconcile()
     if DEPLOYMENT.exists() and load_deployment()['phase'] not in ('prepared', 'destroyed'):
         raise ValueError('Previous deployment needs cleanup; run destroy before selecting another pool')
     reject_legacy_inputs()
     config = load_config()
     ensure_local(config)
-    if not (LOCAL / 'reconstructed-portal.json').exists():
-        subprocess.run([sys.executable, str(ROOT / 'scripts/reconstruct.py')], check=True)
     attempts = []
     for placement in candidates(config):
         context = context_for(config, placement)
+        if test_run_id:
+            context['test_run_id'] = test_run_id
         label = placement['region'] + '/' + placement['availability_zone']
         try:
             discovery = collect(context)
@@ -133,16 +140,18 @@ def deploy():
         context['phase'] = 'creating'
         save_context(context)
         plan = LOCAL / 'create.tfplan'
-        tf(['plan', '-input=false', '-no-color', '-out=' + str(plan)])
-        validate_plan(json.loads(tf(['show', '-json', str(plan)], True)), context=context)
         try:
-            tf(['apply', '-input=false', '-no-color', str(plan)])
+            from infrastructure import apply
+            apply(context, tf, validate_plan, plan)
         except TerraformError as error:
             retry = scheduler_unavailable(error, context)
             # Clean before considering another pool, including partial apply failures.
-            destroy()
             if not retry:
                 raise
+            if test_run_id:
+                destroy(clean_local=False, expected_run_id=test_run_id)
+            else:
+                destroy(clean_local=False)
             attempts.append({'pool': placement['region'], 'segment': placement['availability_zone'],
                              'result': 'scheduler_unavailable', 'cleanup_success': True})
             write_json(LOCAL / 'pool-attempts.json', attempts)
@@ -151,11 +160,7 @@ def deploy():
         context['state_lineage'] = read_json(STATE)['lineage']
         context['phase'] = 'configuring'
         save_context(context)
-        inventory = json.loads(tf(['output', '-json', 'lab'], True))
-        inventory.update(project_id=context['project_id'], region=context['region'],
-                         name_prefix=config['name_prefix'], subnet_cidr=config['subnet_cidr'],
-                         deployment_id=context['deployment_id'], ssh_key_path=str(key_path(config)))
-        write_json(LOCAL / 'lab.json', inventory)
+        inventory = publish_inventory(context)
         discover_route(inventory)
         from remote import configure
         configure(inventory)
@@ -166,6 +171,16 @@ def deploy():
         write_json(LOCAL / 'pool-attempts.json', attempts)
         return
     raise RuntimeError('No configured pool/segment could place the complete DZ05 stand; no failed attempt is left allocated')
+
+
+def publish_inventory(context):
+    inventory = json.loads(tf(['output', '-json', 'lab'], True))
+    config = context['config']
+    inventory.update(project_id=context['project_id'], region=context['region'],
+                     name_prefix=config['name_prefix'], subnet_cidr=config['subnet_cidr'],
+                     deployment_id=context['deployment_id'], ssh_key_path=str(key_path(config)))
+    write_json(LOCAL / 'lab.json', inventory)
+    return inventory
 
 
 def discover_route(inventory):
@@ -247,13 +262,23 @@ def await_inventory_empty(endpoints, token, prefix, own_fips):
     return remaining
 
 
-def destroy():
+def cleanup_local_data() -> None:
+    """Discard this project's runtime data after state and API cleanup succeeded."""
+    if state_resources():
+        raise ValueError('Cannot remove local data while managed state remains')
+    from local_runtime import cleanup_runtime
+    cleanup_runtime(ROOT)
+
+
+def destroy(clean_local: bool = True, expected_run_id=None):
     if not DEPLOYMENT.exists():
         if state_resources():
             raise ValueError('State exists without saved placement; refusing to guess project/pool')
         print('No saved deployment and no managed state; nothing was allocated by this configuration.', flush=True)
         return
     context = load_deployment()
+    if expected_run_id is not None and context.get('test_run_id') != expected_run_id:
+        raise ValueError('Refusing to destroy a stand owned by another test run')
     plan = LOCAL / 'destroy.tfplan'
     tf(['plan', '-destroy', '-input=false', '-no-color', '-out=' + str(plan)])
     data = json.loads(tf(['show', '-json', str(plan)], True))
@@ -277,41 +302,34 @@ def destroy():
         raise RuntimeError('Own resources remain in selected pool; do not switch pools or delete foreign resources')
     context['phase'] = 'destroyed'
     save_context(context)
+    if clean_local:
+        cleanup_local_data()
+        lock = ROOT / '.test-cycle.lock'
+        if expected_run_id is None and context.get('test_run_id') and lock.exists():
+            if lock.read_text(encoding='utf-8') == context['test_run_id']:
+                lock.unlink()  # Explicit recovery destroy releases its own abandoned test lock.
     print('DZ05 cleanup: own state and selected-pool API inventory empty.', flush=True)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['deploy', 'verify', 'destroy', 'test-cycle'])
+    parser.add_argument('command', choices=['deploy', 'verify', 'open', 'destroy', 'test-cycle'])
     args = parser.parse_args()
+    if args.command == 'test-cycle':
+        from test_cycle import run
+        return run()
     LOCAL.mkdir(exist_ok=True)
-    if args.command == 'deploy':
+    if args.command == 'open':
+        from local_runtime import open_portal
+        open_portal(ROOT, 5)
+    elif args.command == 'deploy':
+        tf(['init', '-input=false', '-no-color'])
         deploy()
     elif args.command == 'destroy':
         destroy()
     elif args.command == 'verify':
         from verify import verify
         verify(saved_lab())
-    else:
-        result = {'started_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'success': False}
-        try:
-            deploy()
-            from verify import verify
-            verify(saved_lab())
-            result['success'] = True
-        except Exception as error:
-            result['error_type'] = type(error).__name__
-            raise
-        finally:
-            try:
-                destroy()
-                result['cleanup_success'] = True
-            except Exception:
-                result['cleanup_success'] = False
-                raise
-            finally:
-                result['finished_utc'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-                write_json(LOCAL / 'cycle-latest.json', result)
 
 
 if __name__ == '__main__':
